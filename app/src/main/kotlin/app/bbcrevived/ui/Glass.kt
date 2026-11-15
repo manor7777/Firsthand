@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeChild
 
 /**
  * Frosted-glass surface: blurs whatever sits under it in [hz] (Haze; real blur on API 31+, scrim fallback otherwise).
@@ -33,11 +33,12 @@ import dev.chrisbanes.haze.hazeEffect
 fun Modifier.glass(hz: HazeState, shape: Shape = CircleShape): Modifier {
     val surface = MaterialTheme.colorScheme.surface
     return this
-        .clip(shape)
-        .hazeEffect(
+        .hazeChild(
             state = hz,
+            shape = shape,
             style = HazeStyle(backgroundColor = surface, tint = HazeTint(surface.copy(alpha = 0.40f)), blurRadius = 24.dp),
         )
+        .clip(shape)
         .border(1.dp, Color.White.copy(alpha = 0.28f), shape)
 }
 

@@ -15,7 +15,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.bbcrevived.AppViewModel
 import app.bbcrevived.data.Story
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.haze
 
 @Composable
 fun AppRoot(vm: AppViewModel = viewModel()) {
@@ -36,7 +36,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     BackHandler(enabled = searching && reader == null) { searching = false; query = "" }
 
     Box(Modifier.fillMaxSize()) {
-        Surface(Modifier.fillMaxSize().hazeSource(hz), color = MaterialTheme.colorScheme.surface) {
+        Surface(Modifier.fillMaxSize().haze(hz), color = MaterialTheme.colorScheme.surface) {
             when {
                 searching -> SearchScreen(query, pool, open)
                 tab == Tab.Home -> HomeScreen(hz, home.breaking, home.mostRead, forYou, refreshing, vm::refresh, open)
