@@ -24,19 +24,21 @@ import app.bbcrevived.data.Block
 import app.bbcrevived.data.Story
 import coil.compose.AsyncImage
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 
 /** Native article reader: swipe left/right between stories in the list you opened it from. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ArticlePager(
-    hz: HazeState, stories: List<Story>, start: Int, blocks: Map<String, List<Block>>,
+    stories: List<Story>, start: Int, blocks: Map<String, List<Block>>,
     load: (Story) -> Unit, onClose: () -> Unit,
 ) {
     BackHandler(onBack = onClose)
+    val hz = remember { HazeState() }
     val pager = rememberPagerState(start) { stories.size }
     Surface(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize()) {
-            HorizontalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 1) { p ->
+            HorizontalPager(pager, Modifier.fillMaxSize().hazeSource(hz), beyondViewportPageCount = 1) { p ->
                 val s = stories[p]
                 LaunchedEffect(s.url) { load(s) }
                 ArticlePage(s, blocks[s.url])

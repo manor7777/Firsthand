@@ -50,7 +50,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
             modifier = Modifier.align(Alignment.BottomCenter),
         )
         AnimatedVisibility(reader != null, enter = slideInHorizontally { it }, exit = slideOutHorizontally { it }) {
-            reader?.let { (l, i) -> ArticlePager(hz, l, i, blocks, vm::loadArticle) { reader = null } }
+            reader?.let { (l, i) -> ArticlePager(l, i, blocks, vm::loadArticle) { reader = null } }
         }
     }
 }
