@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.bbcrevived.data.*
+import app.bbcrevived.notify.Alerts
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -17,19 +18,37 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setAccent(v: String) { viewModelScope.launch { prefs.setAccent(v) } }
     fun setThemeMode(v: String) { viewModelScope.launch { prefs.setTheme(v) } }
 
+    val alertEnabled = prefs.alertEnabled.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val alertOnlyFollows = prefs.alertOnlyFollows.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val alertMode = prefs.alertMode.stateIn(viewModelScope, SharingStarted.Eagerly, "breaking")
+    val alertInterval = prefs.alertInterval.stateIn(viewModelScope, SharingStarted.Eagerly, 30)
+    fun setAlertEnabled(v: Boolean) { viewModelScope.launch { prefs.setAlertEnabled(v); Alerts.schedule(getApplication(), v, alertInterval.value) } }
+    fun setAlertOnlyFollows(v: Boolean) { viewModelScope.launch { prefs.setAlertOnlyFollows(v) } }
+    fun setAlertMode(v: String) { viewModelScope.launch { prefs.setAlertMode(v) } }
+    fun setAlertInterval(v: Int) { viewModelScope.launch { prefs.setAlertInterval(v); Alerts.schedule(getApplication(), alertEnabled.value, v) } }
+    fun sendTestAlert() = Alerts.test(getApplication())
+
     @kotlinx.serialization.Serializable
-    private data class SettingsExport(val version: Int = 1, val follows: List<String> = emptyList(), val accent: String = "dynamic", val theme: String = "system")
+    private data class SettingsExport(
+        val version: Int = 1, val follows: List<String> = emptyList(), val accent: String = "dynamic", val theme: String = "system",
+        val alertOnlyFollows: Boolean = false, val alertMode: String = "breaking", val alertInterval: Int = 30,
+    )
 
     fun exportJson(): String = kotlinx.serialization.json.Json { prettyPrint = true }
-        .encodeToString(SettingsExport.serializer(), SettingsExport(1, categories.value, accent.value, themeMode.value))
+        .encodeToString(SettingsExport.serializer(), SettingsExport(1, categories.value, accent.value, themeMode.value, alertOnlyFollows.value, alertMode.value, alertInterval.value))
 
     /** Validates then applies an exported settings file. Returns false if it isn't one. */
     fun importJson(text: String): Boolean = runCatching {
         val e = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }.decodeFromString(SettingsExport.serializer(), text)
-        val follows = e.follows.filter { it in Categories.feeds || Categories.isKeyword(it) }.distinct()
+        val follows = e.follows.map(Categories::normalize).filter { it in Categories.feeds || Categories.isKeyword(it) }.distinct()
         val accent = if (e.accent == "dynamic" || Regex("#[0-9A-Fa-f]{6}").matches(e.accent)) e.accent else "dynamic"
         val theme = if (e.theme in setOf("system", "light", "dark")) e.theme else "system"
-        viewModelScope.launch { prefs.set(follows); prefs.setAccent(accent); prefs.setTheme(theme) }
+        viewModelScope.launch {
+            prefs.set(follows); prefs.setAccent(accent); prefs.setTheme(theme)
+            prefs.setAlertOnlyFollows(e.alertOnlyFollows)
+            prefs.setAlertMode(if (e.alertMode in setOf("breaking", "top")) e.alertMode else "breaking")
+            prefs.setAlertInterval(e.alertInterval.coerceIn(15, 720))
+        }
         true
     }.getOrDefault(false)
 
@@ -64,6 +83,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     init {
+        Alerts.ensureChannel(app)
+        viewModelScope.launch { Alerts.schedule(app, prefs.alertEnabled.first(), prefs.alertInterval.first()) }
         // Load feeds for followed topics as the list changes (only what's missing).
         viewModelScope.launch {
             categories.collect { cats ->

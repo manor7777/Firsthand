@@ -9,6 +9,7 @@ data class Story(
     val category: String,
     val publishedMillis: Long,
     val isLive: Boolean = false,
+    val breaking: Boolean = false,
 )
 
 data class HomeData(val breaking: List<Story>, val mostRead: List<Story>)
@@ -46,7 +47,7 @@ object Categories {
         Topic("Politics", "UK", "$N/politics/rss.xml"),
         Topic("Business", "Business & Tech", "$N/business/rss.xml"),
         Topic("Tech", "Business & Tech", "$N/technology/rss.xml"),
-        Topic("Science", "Science & Health", "$N/science_and_environment/rss.xml"),
+        Topic("Science & Environment", "Science & Health", "$N/science_and_environment/rss.xml"),
         Topic("Health", "Science & Health", "$N/health/rss.xml"),
         Topic("Education", "Science & Health", "$N/education/rss.xml"),
         Topic("Culture", "Culture", "$N/entertainment_and_arts/rss.xml"),
@@ -66,6 +67,8 @@ object Categories {
 
     /** A followed item is either a catalogue topic name or a free keyword stored as "kw:<word>". */
     const val KW = "kw:"
+    /** Maps names saved by older versions onto current ones. */
+    fun normalize(f: String) = if (f == "Science") "Science & Environment" else f
     fun isKeyword(f: String) = f.startsWith(KW)
     fun label(f: String) = if (isKeyword(f)) "“${f.removePrefix(KW)}”" else f
     const val TOP = "https://feeds.bbci.co.uk/news/rss.xml"

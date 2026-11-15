@@ -1,7 +1,9 @@
 package app.bbcrevived.data
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -15,7 +17,7 @@ class Prefs(private val ctx: Context) {
     private val default = listOf("World", "Tech", "Sport", "Science")
 
     val categories: Flow<List<String>> = ctx.store.data.map { p ->
-        p[key]?.split('|')?.filter { it in Categories.feeds || Categories.isKeyword(it) } ?: default
+        p[key]?.split('|')?.map(Categories::normalize)?.filter { it in Categories.feeds || Categories.isKeyword(it) }?.distinct() ?: default
     }
 
     private val accentKey = stringPreferencesKey("accent")
@@ -24,6 +26,23 @@ class Prefs(private val ctx: Context) {
     val theme: Flow<String> = ctx.store.data.map { it[themeKey] ?: "system" }
     suspend fun setAccent(v: String) { ctx.store.edit { it[accentKey] = v } }
     suspend fun setTheme(v: String) { ctx.store.edit { it[themeKey] = v } }
+
+    // Breaking-news alerts
+    private val aEnabled = booleanPreferencesKey("alert_enabled")
+    private val aFollows = booleanPreferencesKey("alert_only_follows")
+    private val aMode = stringPreferencesKey("alert_mode")
+    private val aInterval = intPreferencesKey("alert_interval_min")
+    private val aSeen = stringPreferencesKey("alert_seen")
+    val alertEnabled: Flow<Boolean> = ctx.store.data.map { it[aEnabled] ?: false }
+    val alertOnlyFollows: Flow<Boolean> = ctx.store.data.map { it[aFollows] ?: false }
+    val alertMode: Flow<String> = ctx.store.data.map { it[aMode] ?: "breaking" }
+    val alertInterval: Flow<Int> = ctx.store.data.map { it[aInterval] ?: 30 }
+    val alertSeen: Flow<List<String>> = ctx.store.data.map { it[aSeen]?.split('\n')?.filter(String::isNotEmpty) ?: emptyList() }
+    suspend fun setAlertEnabled(v: Boolean) { ctx.store.edit { it[aEnabled] = v } }
+    suspend fun setAlertOnlyFollows(v: Boolean) { ctx.store.edit { it[aFollows] = v } }
+    suspend fun setAlertMode(v: String) { ctx.store.edit { it[aMode] = v } }
+    suspend fun setAlertInterval(v: Int) { ctx.store.edit { it[aInterval] = v } }
+    suspend fun setAlertSeen(v: List<String>) { ctx.store.edit { it[aSeen] = v.joinToString("\n") } }
 
     suspend fun set(list: List<String>) { ctx.store.edit { it[key] = list.joinToString("|") } }
 }

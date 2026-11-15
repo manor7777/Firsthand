@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 fun SettingsScreen(
     accent: String, mode: String,
     onAccent: (String) -> Unit, onMode: (String) -> Unit,
-    exportJson: () -> String, importJson: (String) -> Boolean, onBack: () -> Unit,
+    exportJson: () -> String, importJson: (String) -> Boolean, alerts: AlertState, onBack: () -> Unit,
 ) {
     val ctx = LocalContext.current
     var status by remember { mutableStateOf<String?>(null) }
@@ -63,6 +63,29 @@ fun SettingsScreen(
                 OutlinedTextField(hex, { hex = it.take(7) }, Modifier.weight(1f), singleLine = true, label = { Text("Custom hex, e.g. #FF6A00") })
                 FilledTonalButton({ if (parseAccent(hex) != null && Regex("#?[0-9A-Fa-f]{6}").matches(hex)) onAccent(if (hex.startsWith("#")) hex.uppercase() else "#" + hex.uppercase()) }) { Text("Apply") }
             }
+            Heading("Notifications")
+            val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+                if (ok) alerts.setEnabled(true) else status = "Notifications are blocked for this app. Allow them in system settings."
+            }
+            ToggleRow("Breaking news alerts", "Checks in the background and notifies you.", alerts.enabled) { on ->
+                if (!on) alerts.setEnabled(false)
+                else if (android.os.Build.VERSION.SDK_INT >= 33 && !app.bbcrevived.notify.Alerts.canNotify(ctx)) askPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                else alerts.setEnabled(true)
+            }
+            ToggleRow("Only from topics I follow", "Skip breaking stories outside My News.", alerts.onlyFollows, alerts.setOnlyFollows)
+            Text("Alert on", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(alerts.mode == "breaking", { alerts.setMode("breaking") }, { Text("Breaking only") })
+                FilterChip(alerts.mode == "top", { alerts.setMode("top") }, { Text("Top story changes") })
+            }
+            Text("Check every", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(15 to "15 min", 30 to "30 min", 60 to "1 h", 180 to "3 h").forEach { (m, l) ->
+                    FilterChip(alerts.interval == m, { alerts.setInterval(m) }, { Text(l) })
+                }
+            }
+            OutlinedButton({ alerts.sendTest() }) { Text("Send a test alert") }
+            Text("Android runs background checks roughly on schedule but may delay them to save battery. BBC doesn't publish a breaking flag, so \"Top story changes\" is the fallback.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Heading("Backup")
             Text("Export your followed topics, keywords, theme and accent to a file, or restore them from one.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -96,3 +119,20 @@ private fun Swatch(label: String, color: Color?, selected: Boolean, onClick: () 
 }
 
 @Composable private fun BackHandlerCompat(onBack: () -> Unit) = androidx.activity.compose.BackHandler(onBack = onBack)
+
+class AlertState(
+    val enabled: Boolean, val onlyFollows: Boolean, val mode: String, val interval: Int,
+    val setEnabled: (Boolean) -> Unit, val setOnlyFollows: (Boolean) -> Unit,
+    val setMode: (String) -> Unit, val setInterval: (Int) -> Unit, val sendTest: () -> Unit,
+)
+
+@Composable
+private fun ToggleRow(title: String, sub: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Switch(checked, onChange)
+    }
+}

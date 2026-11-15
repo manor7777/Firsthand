@@ -25,6 +25,11 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
     val accent by vm.accent.collectAsStateWithLifecycle()
     val mode by vm.themeMode.collectAsStateWithLifecycle()
+    val aOn by vm.alertEnabled.collectAsStateWithLifecycle()
+    val aFollows by vm.alertOnlyFollows.collectAsStateWithLifecycle()
+    val aMode by vm.alertMode.collectAsStateWithLifecycle()
+    val aInt by vm.alertInterval.collectAsStateWithLifecycle()
+    val alerts = AlertState(aOn, aFollows, aMode, aInt, vm::setAlertEnabled, vm::setAlertOnlyFollows, vm::setAlertMode, vm::setAlertInterval, vm::sendTestAlert)
     var reader by remember { mutableStateOf<Pair<List<Story>, Int>?>(null) }
 
     val home by vm.home.collectAsStateWithLifecycle()
@@ -57,7 +62,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
             reader?.let { (l, i) -> ArticlePager(l, i, blocks, vm::loadArticle, live, vm::loadLive) { reader = null } }
         }
         AnimatedVisibility(settingsOpen, enter = slideInHorizontally { it }, exit = slideOutHorizontally { it }) {
-            SettingsScreen(accent, mode, vm::setAccent, vm::setThemeMode, vm::exportJson, vm::importJson) { settingsOpen = false }
+            SettingsScreen(accent, mode, vm::setAccent, vm::setThemeMode, vm::exportJson, vm::importJson, alerts) { settingsOpen = false }
         }
     }
 }

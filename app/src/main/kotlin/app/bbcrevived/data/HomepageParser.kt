@@ -31,6 +31,15 @@ object HomepageParser {
             if (i.str("type") == "attribution") i.str("text") else null
         } ?: "News"
         val ts = o.str("lastPublished")?.let { runCatching { Instant.parse(it).toEpochMilli() }.getOrNull() } ?: 0L
-        return Story(url, title, "", url, img, cat, ts, "/live/" in url)
+        return Story(url, title, "", url, img, cat, ts, "/live/" in url, isBreaking(o))
+    }
+
+    /** BBC doesn't document a breaking flag, so check the likely places: a true "*breaking*" key, a "Breaking" label or promo type. */
+    private fun isBreaking(o: JsonObject): Boolean {
+        if (o.any { (k, v) -> k.contains("breaking", true) && (v as? JsonPrimitive)?.booleanOrNull == true }) return true
+        if (listOf("type", "promoType", "pageTypeIndicator").any { o.str(it)?.contains("breaking", true) == true }) return true
+        return (o["metadataStripItems"] as? JsonArray)?.any { i ->
+            listOf("label", "text", "altText", "type").any { i.str(it)?.contains("breaking", true) == true }
+        } == true
     }
 }
