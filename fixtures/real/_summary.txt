@@ -1,0 +1,14 @@
+200 https://feeds.bbci.co.uk/news/rss.xml
+200 https://www.bbc.co.uk/news
+200 https://www.bbc.co.uk/news/articles/cwdr1dmn563do
+200 https://www.bbc.co.uk/news/live/cq5y10ge3dp3t
+== fixtures/real/article.html: 332742 bytes; NEXT_DATA count: 0
+<script nonce="UdAtBbpSvYYixZtSfK+Ysr1y8ZKvjmtIME077YVjq+uI4TprUT" crossorigin="anonymous" type="application/json" id="__LOADABLE_REQUIRED_CHUNKS__"
+<script nonce="UdAtBbpSvYYixZtSfK+Ysr1y8ZKvjmtIME077YVjq+uI4TprUT" crossorigin="anonymous" type="application/json" id="__LOADABLE_REQUIRED_CHUNKS___ext"
+== fixtures/real/home.html: 838260 bytes; NEXT_DATA count: 0
+<script nonce="0qquQe6uYCno3O4bZxfmch3nCL5osVTjhGmSSp+7auU1K0SOIK" crossorigin="anonymous" type="application/json" id="__LOADABLE_REQUIRED_CHUNKS__"
+<script nonce="0qquQe6uYCno3O4bZxfmch3nCL5osVTjhGmSSp+7auU1K0SOIK" crossorigin="anonymous" type="application/json" id="__LOADABLE_REQUIRED_CHUNKS___ext"
+== fixtures/real/live.html: 658604 bytes; NEXT_DATA count: 0
+<script data-testid="live-blog-schema-data-script"
+<script nonce="vzmqao5KAjBVHlHGAE1AcEwiB2cFeqzN5+mEa60LsIcpiV4SH4" crossorigin="anonymous" type="application/json" id="__LOADABLE_REQUIRED_CHUNKS__"
+<script nonce="vzmqao5KAjBVHlHGAE1AcEwiB2cFeqzN5+mEa60LsIcpiV4SH4" crossorigin="anonymous" type="application/json" id="__LOADABLE_REQUIRED_CHUNKS___ext"
