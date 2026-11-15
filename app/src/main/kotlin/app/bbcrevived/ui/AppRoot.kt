@@ -26,6 +26,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
 
     val home by vm.home.collectAsStateWithLifecycle()
     val forYou by vm.forYou.collectAsStateWithLifecycle()
+    val topics by vm.topicStories.collectAsStateWithLifecycle()
     val cats by vm.categories.collectAsStateWithLifecycle()
     val refreshing by vm.refreshing.collectAsStateWithLifecycle()
     val pool by vm.searchPool.collectAsStateWithLifecycle()
@@ -40,7 +41,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
             when {
                 searching -> SearchScreen(hz, query, pool, open)
                 tab == Tab.Home -> HomeScreen(hz, home.breaking, home.mostRead, forYou, refreshing, vm::refresh, open)
-                else -> MyNewsScreen(hz, cats, vm::setCategories)
+                else -> MyNewsScreen(hz, cats, topics, vm::setCategories, open)
             }
         }
         GlassDock(

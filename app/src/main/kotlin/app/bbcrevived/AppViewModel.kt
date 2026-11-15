@@ -21,15 +21,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _blocks = MutableStateFlow<Map<String, List<Block>>>(emptyMap())
     val blocks = _blocks.asStateFlow()
 
-    /** "For you": round-robin mix across chosen categories, in the user's order. */
-    val forYou: StateFlow<List<Story>> = combine(categories, _byCat, _home, _top) { cats, by, h, top ->
+    /** Stories per followed item, in the user's order. Keywords match across everything loaded. */
+    val topicStories: StateFlow<Map<String, List<Story>>> = combine(categories, _byCat, _home, _top) { cats, by, h, top ->
         val pool = (h.breaking + h.mostRead + top + by.values.flatten()).distinctBy { it.url }
-        val lists = cats.map { c ->
+        cats.associateWith { c ->
             if (Categories.isKeyword(c)) {
                 val k = c.removePrefix(Categories.KW).lowercase()
                 pool.filter { (it.title + " " + it.summary).lowercase().contains(k) }
             } else by[c].orEmpty()
         }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    /** "For you": round-robin mix across followed items, in the user's order. */
+    val forYou: StateFlow<List<Story>> = topicStories.map { m ->
+        val lists = m.values.toList()
         buildList { for (i in 0 until 6) lists.forEach { l -> l.getOrNull(i)?.let(::add) } }.distinctBy { it.url }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 

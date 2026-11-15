@@ -75,7 +75,14 @@ private fun ArticlePage(s: Story, blocks: List<Block>?) {
                     FilledTonalButton({ uri.openUri(s.url) }) { Text("Open original") }
                 }
             }
-            else -> items(blocks) { b -> BlockView(b) }
+            else -> {
+                // The hero already shows the lead photo; skip the same image at the top of the body.
+                val body = if (s.imageUrl != null && blocks.firstOrNull() is Block.Image) blocks.drop(1) else blocks
+                (blocks.firstOrNull() as? Block.Image)?.caption?.takeIf { s.imageUrl != null }?.let { cap ->
+                    item { Text(cap, Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                }
+                items(body) { b -> BlockView(b) }
+            }
         }
     }
 }
