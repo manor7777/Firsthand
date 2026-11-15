@@ -76,9 +76,12 @@ private fun ArticlePage(s: Story, blocks: List<Block>?) {
                 }
             }
             else -> {
-                // The hero already shows the lead photo; skip the same image at the top of the body.
-                val body = if (s.imageUrl != null && blocks.firstOrNull() is Block.Image) blocks.drop(1) else blocks
-                (blocks.firstOrNull() as? Block.Image)?.caption?.takeIf { s.imageUrl != null }?.let { cap ->
+                // The hero already shows the lead photo; drop the same photo from the body (matched by file, any size).
+                fun key(u: String) = u.substringAfter("/standard/", u).substringAfter('/').substringBefore('.')
+                val heroKey = s.imageUrl?.let(::key)
+                val dup = if (heroKey == null) null else blocks.withIndex().firstOrNull { (i, b) -> i < 4 && b is Block.Image && key(b.url) == heroKey }
+                val body = if (dup == null) blocks else blocks.filterIndexed { i, _ -> i != dup.index }
+                (dup?.value as? Block.Image)?.caption?.let { cap ->
                     item { Text(cap, Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
                 items(body) { b -> BlockView(b) }

@@ -12,6 +12,27 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val prefs = Prefs(app)
 
     val categories = prefs.categories.stateIn(viewModelScope, SharingStarted.Eagerly, listOf("World", "Tech", "Sport", "Science"))
+    val accent = prefs.accent.stateIn(viewModelScope, SharingStarted.Eagerly, "dynamic")
+    val themeMode = prefs.theme.stateIn(viewModelScope, SharingStarted.Eagerly, "system")
+    fun setAccent(v: String) { viewModelScope.launch { prefs.setAccent(v) } }
+    fun setThemeMode(v: String) { viewModelScope.launch { prefs.setTheme(v) } }
+
+    @kotlinx.serialization.Serializable
+    private data class SettingsExport(val version: Int = 1, val follows: List<String> = emptyList(), val accent: String = "dynamic", val theme: String = "system")
+
+    fun exportJson(): String = kotlinx.serialization.json.Json { prettyPrint = true }
+        .encodeToString(SettingsExport.serializer(), SettingsExport(1, categories.value, accent.value, themeMode.value))
+
+    /** Validates then applies an exported settings file. Returns false if it isn't one. */
+    fun importJson(text: String): Boolean = runCatching {
+        val e = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }.decodeFromString(SettingsExport.serializer(), text)
+        val follows = e.follows.filter { it in Categories.feeds || Categories.isKeyword(it) }.distinct()
+        val accent = if (e.accent == "dynamic" || Regex("#[0-9A-Fa-f]{6}").matches(e.accent)) e.accent else "dynamic"
+        val theme = if (e.theme in setOf("system", "light", "dark")) e.theme else "system"
+        viewModelScope.launch { prefs.set(follows); prefs.setAccent(accent); prefs.setTheme(theme) }
+        true
+    }.getOrDefault(false)
+
     private val _home = MutableStateFlow(HomeData(emptyList(), emptyList()))
     val home = _home.asStateFlow()
     private val _byCat = MutableStateFlow<Map<String, List<Story>>>(emptyMap())

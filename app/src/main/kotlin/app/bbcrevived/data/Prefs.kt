@@ -18,5 +18,12 @@ class Prefs(private val ctx: Context) {
         p[key]?.split('|')?.filter { it in Categories.feeds || Categories.isKeyword(it) } ?: default
     }
 
+    private val accentKey = stringPreferencesKey("accent")
+    private val themeKey = stringPreferencesKey("theme")
+    val accent: Flow<String> = ctx.store.data.map { it[accentKey] ?: "dynamic" }
+    val theme: Flow<String> = ctx.store.data.map { it[themeKey] ?: "system" }
+    suspend fun setAccent(v: String) { ctx.store.edit { it[accentKey] = v } }
+    suspend fun setTheme(v: String) { ctx.store.edit { it[themeKey] = v } }
+
     suspend fun set(list: List<String>) { ctx.store.edit { it[key] = list.joinToString("|") } }
 }

@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -74,7 +75,7 @@ private fun SectionLabel(t: String) =
 @Composable
 fun HomeScreen(
     hz: HazeState, breaking: List<Story>, mostRead: List<Story>, forYou: List<Story>,
-    refreshing: Boolean, onRefresh: () -> Unit, onOpen: (List<Story>, Int) -> Unit,
+    refreshing: Boolean, onRefresh: () -> Unit, onOpen: (List<Story>, Int) -> Unit, onSettings: () -> Unit,
 ) {
     var mode by rememberSaveable { mutableIntStateOf(0) }
     val view = LocalView.current
@@ -108,7 +109,10 @@ fun HomeScreen(
             }
         }
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = top + 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("BBC Revived", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("BBC Revived", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                IconButton(onSettings) { Icon(Icons.Filled.Settings, "Settings") }
+            }
             SlidingPill(hz, 2, mode, Modifier.fillMaxWidth(), height = 46.dp) { i, sel ->
                 Box(Modifier.weight(1f).fillMaxHeight().tap { mode = i; view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK) }, contentAlignment = Alignment.Center) {
                     Text(if (i == 0) "Breaking" else "For you", fontWeight = FontWeight.SemiBold,
@@ -193,7 +197,7 @@ fun SearchScreen(hz: HazeState, query: String, pool: List<Story>, onOpen: (List<
 @Composable
 fun MyNewsScreen(
     hz: HazeState, selected: List<String>, topics: Map<String, List<Story>>,
-    onChange: (List<String>) -> Unit, onOpen: (List<Story>, Int) -> Unit,
+    onChange: (List<String>) -> Unit, onOpen: (List<Story>, Int) -> Unit, onSettings: () -> Unit,
 ) {
     var editing by rememberSaveable { mutableStateOf(false) }
     var filter by rememberSaveable { mutableStateOf<String?>(null) } // null = all sections
@@ -207,6 +211,7 @@ fun MyNewsScreen(
         Row(Modifier.padding(start = 18.dp, end = 8.dp, top = top + 16.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("My News", Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             IconButton({ editing = true }) { Icon(Icons.Filled.Edit, "Edit My News") }
+            IconButton(onSettings) { Icon(Icons.Filled.Settings, "Settings") }
         }
         androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             item { FilterChip(active == null, { filter = null }, { Text("All") }) }

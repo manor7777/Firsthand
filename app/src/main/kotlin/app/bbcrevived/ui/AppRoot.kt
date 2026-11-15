@@ -22,6 +22,9 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
+    var settingsOpen by rememberSaveable { mutableStateOf(false) }
+    val accent by vm.accent.collectAsStateWithLifecycle()
+    val mode by vm.themeMode.collectAsStateWithLifecycle()
     var reader by remember { mutableStateOf<Pair<List<Story>, Int>?>(null) }
 
     val home by vm.home.collectAsStateWithLifecycle()
@@ -40,8 +43,8 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
             when {
                 searching -> SearchScreen(hz, query, pool, open)
-                tab == Tab.Home -> HomeScreen(hz, home.breaking, home.mostRead, forYou, refreshing, vm::refresh, open)
-                else -> MyNewsScreen(hz, cats, topics, vm::setCategories, open)
+                tab == Tab.Home -> HomeScreen(hz, home.breaking, home.mostRead, forYou, refreshing, vm::refresh, open) { settingsOpen = true }
+                else -> MyNewsScreen(hz, cats, topics, vm::setCategories, open) { settingsOpen = true }
             }
         }
         GlassDock(
@@ -52,6 +55,9 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
         )
         AnimatedVisibility(reader != null, enter = slideInHorizontally { it }, exit = slideOutHorizontally { it }) {
             reader?.let { (l, i) -> ArticlePager(l, i, blocks, vm::loadArticle, live, vm::loadLive) { reader = null } }
+        }
+        AnimatedVisibility(settingsOpen, enter = slideInHorizontally { it }, exit = slideOutHorizontally { it }) {
+            SettingsScreen(accent, mode, vm::setAccent, vm::setThemeMode, vm::exportJson, vm::importJson) { settingsOpen = false }
         }
     }
 }

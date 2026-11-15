@@ -8,6 +8,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import app.bbcrevived.ui.AppRoot
 import app.bbcrevived.ui.RevivedTheme
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.io.File
 
 class MainActivity : ComponentActivity() {
@@ -27,6 +29,11 @@ class MainActivity : ComponentActivity() {
             return
         }
         enableEdgeToEdge()
-        setContent { RevivedTheme { AppRoot() } }
+        setContent {
+            val vm: AppViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+            val accent by vm.accent.collectAsStateWithLifecycle()
+            val mode by vm.themeMode.collectAsStateWithLifecycle()
+            RevivedTheme(accent, mode) { AppRoot(vm) }
+        }
     }
 }
