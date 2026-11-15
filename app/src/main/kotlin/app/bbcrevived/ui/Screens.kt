@@ -26,6 +26,7 @@ import app.bbcrevived.data.Categories
 import app.bbcrevived.data.Story
 import coil.compose.AsyncImage
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
 
 private fun ago(ms: Long): String {
     if (ms <= 0) return ""
@@ -82,7 +83,7 @@ fun HomeScreen(
 
     Box(Modifier.fillMaxSize()) {
         PullToRefreshBox(
-            isRefreshing = refreshing, onRefresh = onRefresh, state = state, modifier = Modifier.fillMaxSize(),
+            isRefreshing = refreshing, onRefresh = onRefresh, state = state, modifier = Modifier.fillMaxSize().haze(hz),
             indicator = {
                 PullToRefreshDefaults.Indicator(state, refreshing, Modifier.align(Alignment.TopCenter).padding(top = top + 110.dp))
             },
@@ -117,9 +118,9 @@ fun HomeScreen(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun MyNewsScreen(selected: List<String>, onChange: (List<String>) -> Unit) {
+fun MyNewsScreen(hz: HazeState, selected: List<String>, onChange: (List<String>) -> Unit) {
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    Column(Modifier.fillMaxSize().padding(horizontal = 18.dp).padding(top = top + 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxSize().haze(hz).padding(horizontal = 18.dp).padding(top = top + 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("My News", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Text("Pick categories. The order sets how For you is mixed.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -143,11 +144,11 @@ fun MyNewsScreen(selected: List<String>, onChange: (List<String>) -> Unit) {
 }
 
 @Composable
-fun SearchScreen(query: String, pool: List<Story>, onOpen: (List<Story>, Int) -> Unit) {
+fun SearchScreen(hz: HazeState, query: String, pool: List<Story>, onOpen: (List<Story>, Int) -> Unit) {
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val q = query.trim().lowercase()
     val results = remember(q, pool) { if (q.isEmpty()) pool.take(20) else pool.filter { (it.title + " " + it.summary + " " + it.category).lowercase().contains(q) } }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(14.dp, top + 16.dp, 14.dp, 130.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    LazyColumn(Modifier.fillMaxSize().haze(hz), contentPadding = PaddingValues(14.dp, top + 16.dp, 14.dp, 130.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         item { Text(if (q.isEmpty()) "Recent stories" else "${results.size} results in your feeds", color = MaterialTheme.colorScheme.onSurfaceVariant) }
         itemsIndexed(results) { i, s -> StoryCard(s, false) { onOpen(results, i) } }
     }
