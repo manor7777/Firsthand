@@ -6,6 +6,7 @@ import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import app.bbcrevived.notify.Alerts
 import app.bbcrevived.ui.AppRoot
 import app.bbcrevived.ui.RevivedTheme
 import androidx.compose.runtime.getValue
@@ -13,6 +14,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.io.File
 
 class MainActivity : ComponentActivity() {
+    private val vm by lazy { androidx.lifecycle.ViewModelProvider(this)[AppViewModel::class.java] }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        Alerts.storyFrom(intent)?.let { vm.pendingOpen.value = it }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // If the previous run crashed, show the trace (selectable) once instead of launching, then clear it.
@@ -29,8 +38,8 @@ class MainActivity : ComponentActivity() {
             return
         }
         enableEdgeToEdge()
+        if (savedInstanceState == null) Alerts.storyFrom(intent)?.let { vm.pendingOpen.value = it }
         setContent {
-            val vm: AppViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
             val accent by vm.accent.collectAsStateWithLifecycle()
             val mode by vm.themeMode.collectAsStateWithLifecycle()
             RevivedTheme(accent, mode) { AppRoot(vm) }

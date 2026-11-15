@@ -31,6 +31,10 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     val aInt by vm.alertInterval.collectAsStateWithLifecycle()
     val alerts = AlertState(aOn, aFollows, aMode, aInt, vm::setAlertEnabled, vm::setAlertOnlyFollows, vm::setAlertMode, vm::setAlertInterval, vm::sendTestAlert)
     var reader by remember { mutableStateOf<Pair<List<Story>, Int>?>(null) }
+    val pending by vm.pendingOpen.collectAsStateWithLifecycle()
+    LaunchedEffect(pending) {
+        pending?.let { searching = false; settingsOpen = false; reader = listOf(it) to 0; vm.pendingOpen.value = null }
+    }
 
     val home by vm.home.collectAsStateWithLifecycle()
     val forYou by vm.forYou.collectAsStateWithLifecycle()

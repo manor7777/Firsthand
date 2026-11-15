@@ -63,6 +63,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _articleTopics = MutableStateFlow<Map<String, List<TopicRef>>>(emptyMap())
     val articleTopics = _articleTopics.asStateFlow()
 
+    /** A story to open on screen, set when the app is launched from an alert. */
+    val pendingOpen = MutableStateFlow<Story?>(null)
+
     fun toggleFollow(f: String) { val c = categories.value; setCategories(if (f in c) c - f else c + f) }
 
     /** Stories per followed item, in the user's order. Keywords match across everything loaded. */

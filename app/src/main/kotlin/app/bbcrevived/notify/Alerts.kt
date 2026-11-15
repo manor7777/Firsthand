@@ -49,7 +49,7 @@ object Alerts {
         if (!canNotify(ctx)) return
         ensureChannel(ctx)
         val open = PendingIntent.getActivity(
-            ctx, 0, Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            ctx, s.url.hashCode(), intentFor(ctx, s), // unique request code per story so extras aren't merged
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val n = NotificationCompat.Builder(ctx, CHANNEL)
@@ -59,6 +59,30 @@ object Alerts {
             .setContentIntent(open).setAutoCancel(true).setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
         runCatching { NotificationManagerCompat.from(ctx).notify(s.url.hashCode(), n) }
+    }
+
+    private const val X_URL = "story_url"
+    private const val X_TITLE = "story_title"
+    private const val X_SUMMARY = "story_summary"
+    private const val X_IMAGE = "story_image"
+    private const val X_CAT = "story_category"
+    private const val X_LIVE = "story_live"
+
+    /** Launch intent that opens the app straight onto this story. The test alert just opens the app. */
+    fun intentFor(ctx: Context, s: Story): Intent = Intent(ctx, MainActivity::class.java).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        if (s.id == "test") return@apply
+        data = android.net.Uri.parse(s.url)
+        putExtra(X_URL, s.url); putExtra(X_TITLE, s.title); putExtra(X_SUMMARY, s.summary)
+        putExtra(X_IMAGE, s.imageUrl); putExtra(X_CAT, s.category); putExtra(X_LIVE, s.isLive)
+    }
+
+    /** Rebuilds the story from an alert's intent, or null if the intent isn't an alert tap. */
+    fun storyFrom(i: Intent?): Story? {
+        val url = i?.getStringExtra(X_URL) ?: return null
+        if (!url.startsWith("https://www.bbc.co.uk/")) return null
+        return Story(url, i.getStringExtra(X_TITLE).orEmpty(), i.getStringExtra(X_SUMMARY).orEmpty(), url,
+            i.getStringExtra(X_IMAGE), i.getStringExtra(X_CAT) ?: "News", 0L, i.getBooleanExtra(X_LIVE, false))
     }
 
     fun test(ctx: Context) = notify(ctx, Story("test", "This is how a breaking news alert will look", "", "https://www.bbc.co.uk/news", null, "News", 0L, breaking = true), "Breaking news (test)")
