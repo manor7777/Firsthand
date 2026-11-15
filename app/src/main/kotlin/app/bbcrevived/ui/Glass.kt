@@ -3,7 +3,11 @@ package app.bbcrevived.ui
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import android.graphics.RuntimeShader
+import android.os.Build
 import androidx.compose.foundation.border
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -40,6 +44,29 @@ fun Modifier.glass(hz: HazeState, shape: Shape = CircleShape): Modifier {
         )
         .clip(shape)
         .border(1.dp, Color.White.copy(alpha = 0.28f), shape)
+        .then(if (Build.VERSION.SDK_INT >= 33) Modifier.lensHighlight() else Modifier)
+}
+
+// AGSL (API 33+): rim light that brightens toward the edge plus a soft top sheen, like light bending through glass.
+private const val LENS_SRC = """
+uniform float2 size;
+half4 main(float2 p) {
+    float r = min(size.x, size.y) * 0.5;
+    float2 q = abs(p - size * 0.5) - (size * 0.5 - float2(r));
+    float d = length(max(q, float2(0.0))) + min(max(q.x, q.y), 0.0) - r;
+    float rim = smoothstep(-7.0, 0.0, d);
+    float sheen = (1.0 - p.y / size.y) * 0.10 * (1.0 - rim);
+    float a = rim * 0.34 + sheen;
+    return half4(a, a, a, a);
+}
+"""
+
+@androidx.annotation.RequiresApi(33)
+private fun Modifier.lensHighlight(): Modifier = drawWithCache {
+    val shader = RuntimeShader(LENS_SRC)
+    shader.setFloatUniform("size", size.width, size.height)
+    val brush = ShaderBrush(shader)
+    onDrawWithContent { drawContent(); drawRect(brush) }
 }
 
 /** Glass pill with a highlight that slides between equal-width items with a springy overshoot. */
