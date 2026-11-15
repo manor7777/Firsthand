@@ -1,27 +1,30 @@
 package app.bbcrevived.data
 
-import app.bbcrevived.data.NextData.str
+import app.bbcrevived.data.InitialData.str
 import kotlinx.serialization.json.*
 
-/**
- * Best-effort live-page timeline. A "post" is any object with an id, a timestamp-ish key and renderable content.
- * Returns empty if the format isn't recognised; the UI then falls back to an inline embed of the page.
- */
+/** Live pages: the "stream" widget holds the posts (newest first, first page only). */
 object LiveParser {
-    private val timeKeys = arrayOf("firstPublished", "published", "lastPublished", "timestamp", "date", "time")
-
     fun parse(html: String, url: String): List<LivePost> {
-        val root = NextData.extract(html) ?: return emptyList()
-        val posts = LinkedHashMap<String, LivePost>()
-        NextData.walk(root) { o, _ ->
-            val id = o.str("id", "assetId", "urn") ?: return@walk
-            val time = o.str(*timeKeys) ?: return@walk
-            val blocks = ArticleParser.blocksOf(o, url)
-            if (blocks.isEmpty()) return@walk
-            val pinned = (o["pinned"] as? JsonPrimitive)?.booleanOrNull == true || (o["isPinned"] as? JsonPrimitive)?.booleanOrNull == true
-            posts.putIfAbsent(id, LivePost(id, time, o.str("title", "headline"), blocks, pinned))
+        val root = InitialData.extract(html) ?: return emptyList()
+        val results = (InitialData.widgets(root, "stream").firstOrNull() as? JsonObject)?.get("results") as? JsonArray ?: return emptyList()
+        val posts = results.mapNotNull { r ->
+            val o = r as? JsonObject ?: return@mapNotNull null
+            val id = o.str("urn") ?: return@mapNotNull null
+            val blocks = ((o["content"] as? JsonObject)?.get("model") as? JsonObject)?.get("blocks") as? JsonArray
+            val converted = blocks?.let { ArticleParser.convert(it, url) }.orEmpty()
+            if (converted.isEmpty()) return@mapNotNull null
+            val opts = o["options"] as? JsonObject
+            fun flag(k: String) = (opts?.get(k) as? JsonPrimitive)?.booleanOrNull == true
+            LivePost(
+                id = id,
+                time = o.str("timestamp"),
+                title = o["headline"]?.let(ArticleParser::leafText)?.takeIf { it.isNotBlank() },
+                blocks = converted,
+                pinned = flag("isPinned") || flag("pinned"),
+                breaking = flag("isBreakingNews"),
+            )
         }
-        // Pinned first, then newest (ISO timestamps sort lexically).
-        return posts.values.sortedWith(compareByDescending<LivePost> { it.pinned }.thenByDescending { it.time.orEmpty() })
+        return posts.sortedByDescending { it.pinned } // stable: keeps the page's newest-first order
     }
 }

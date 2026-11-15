@@ -1,38 +1,47 @@
 package app.bbcrevived.data
 
+import java.io.File
 import org.junit.Assert.*
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 
-// SYNTHETIC fixtures shaped like the real formats. Replace with saved real BBC samples when reachable.
+/** Runs against real BBC pages captured in fixtures/real (see .github/workflows/fixtures.yml). */
 class ParserTest {
+    private fun fx(name: String): String {
+        val f = File("../fixtures/real/$name").takeIf { it.exists() } ?: File("fixtures/real/$name")
+        assumeTrue("fixture $name missing", f.exists())
+        return f.readText()
+    }
+
     @Test fun rss() {
-        val xml = """<rss xmlns:media="http://search.yahoo.com/mrss/"><channel><item>
-          <title>Hello</title><description>Sum</description><link>https://www.bbc.co.uk/news/articles/c1?at=x</link>
-          <pubDate>Sat, 14 Nov 2026 10:00:00 GMT</pubDate>
-          <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/a.jpg"/></item></channel></rss>"""
-        val s = RssParser.parse(xml, "World").single()
-        assertEquals("Hello", s.title); assertEquals("https://www.bbc.co.uk/news/articles/c1", s.url)
-        assertTrue(s.imageUrl!!.contains("/660/")); assertTrue(s.publishedMillis > 0)
+        val s = RssParser.parse(fx("top.xml"), "Top")
+        assertTrue(s.size >= 5)
+        assertTrue(s.all { it.title.isNotEmpty() && it.url.startsWith("https://www.bbc.co.uk/") && '?' !in it.url })
+        assertTrue(s.any { it.imageUrl != null })
     }
+
     @Test fun homepage() {
-        val html = """<script id="__NEXT_DATA__" type="application/json">{"props":{"breakingNews":[{"headline":"B1","href":"/news/articles/c9"}],
-          "mostRead":{"items":[{"title":"M1","href":"/news/articles/c8"}]}}}</script>"""
-        val h = HomepageParser.parse(html)
-        assertEquals("B1", h.breaking.single().title); assertEquals("M1", h.mostRead.single().title)
+        val h = HomepageParser.parse(fx("home.html"))
+        assertTrue("breaking ${h.breaking.size}", h.breaking.size >= 5)
+        assertTrue("mostRead ${h.mostRead.size}", h.mostRead.size >= 3)
+        assertTrue(h.breaking.all { it.url.startsWith("https://www.bbc.co.uk/news/") && it.title.isNotBlank() })
+        assertTrue(h.breaking.any { it.imageUrl != null })
     }
+
     @Test fun article() {
-        val html = """<script id="__NEXT_DATA__" type="application/json">{"blocks":[
-          {"type":"text","model":{"blocks":[{"type":"paragraph","model":{"blocks":[{"type":"fragment","model":{"text":"Hi "}},{"type":"fragment","model":{"text":"there"}}]}}]}},
-          {"type":"subheadline","model":{"text":"Head"}},{"type":"interactive","model":{}}]}</script>"""
-        val b = ArticleParser.parse(html, "u")
-        assertEquals(Block.Paragraph("Hi there"), b[0]); assertEquals(Block.Heading("Head"), b[1]); assertTrue(b[2] is Block.Embed)
+        val b = ArticleParser.parse(fx("article.html"), "https://www.bbc.co.uk/news/articles/x")
+        val paras = b.filterIsInstance<Block.Paragraph>()
+        assertTrue("paragraphs ${paras.size}", paras.size >= 5)
+        assertTrue(paras.first().text.startsWith("A discussion over a staggered age of consent"))
+        assertTrue(b.any { it is Block.Image })
+        // headline/byline/related-links must not leak into the body
+        assertFalse(paras.any { it.text.startsWith("Staggered age of consent to be discussed after Brand case") })
     }
 
     @Test fun live() {
-        val html = """<script id="__NEXT_DATA__" type="application/json">{"posts":[
-          {"id":"a","firstPublished":"2026-11-14T10:00:00Z","pinned":false,"title":"Old","blocks":[{"type":"paragraph","model":{"text":"one"}}]},
-          {"id":"b","firstPublished":"2026-11-14T11:00:00Z","pinned":false,"blocks":[{"type":"paragraph","model":{"text":"two"}}]},
-          {"id":"c","firstPublished":"2026-11-14T09:00:00Z","pinned":true,"blocks":[{"type":"paragraph","model":{"text":"top"}}]}]}</script>"""
-        assertEquals(listOf("c", "b", "a"), LiveParser.parse(html, "u").map { it.id })
+        val p = LiveParser.parse(fx("live.html"), "https://www.bbc.co.uk/news/live/x")
+        assertTrue("posts ${p.size}", p.size >= 10)
+        assertTrue(p.all { it.id.isNotEmpty() && it.blocks.isNotEmpty() })
+        assertTrue(p.first().time!!.isNotBlank())
     }
 }

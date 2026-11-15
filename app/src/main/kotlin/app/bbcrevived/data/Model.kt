@@ -78,4 +78,5 @@ data class LivePost(
     val title: String?,
     val blocks: List<Block>,
     val pinned: Boolean,
+    val breaking: Boolean = false,
 )

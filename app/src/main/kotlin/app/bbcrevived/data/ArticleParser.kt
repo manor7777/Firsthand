@@ -1,76 +1,68 @@
 package app.bbcrevived.data
 
-import app.bbcrevived.data.NextData.str
+import app.bbcrevived.data.InitialData.str
 import kotlinx.serialization.json.*
 
-/**
- * Best-effort article body extraction from `__NEXT_DATA__`. Text-like containers become native blocks;
- * interactive/video/unknown block types become [Block.Embed] pointing at the article URL.
- */
+/** Converts BBC's block model (type/model/blocks) into native [Block]s. */
 object ArticleParser {
-    private val textTypes = setOf("paragraph", "text")
-    private val headTypes = setOf("subheadline", "crosshead", "subheading")
-    private val quoteTypes = setOf("quote", "pullquote", "pull-quote")
-    private val embedTypes = setOf("interactive", "embed", "video", "media-player", "iframe", "webview", "chart", "poll")
+    private val skip = setOf("headline", "byline", "metadata", "topicList", "promoList", "link", "contributor", "caption", "advert")
+    private val embeds = setOf("video", "mediaplayer", "media-player", "interactive", "embed", "include", "socialembed", "iframe", "webview", "chart", "poll", "oembed")
 
     fun parse(html: String, articleUrl: String): List<Block> {
-        val root = NextData.extract(html) ?: return emptyList()
-        return blocksOf(root, articleUrl)
+        val root = InitialData.extract(html) ?: return emptyList()
+        val blocks = (InitialData.widgets(root, "article").firstOrNull() as? JsonObject)
+            ?.get("content")?.jsonObject?.get("model")?.jsonObject?.get("blocks") as? JsonArray ?: return emptyList()
+        return convert(blocks, articleUrl)
     }
 
-    /** Extracts native blocks from any JSON subtree (whole article or a single live post). */
-    fun blocksOf(root: JsonElement, articleUrl: String): List<Block> {
+    fun convert(blocks: JsonArray, url: String): List<Block> {
         val out = ArrayList<Block>()
-        fun visit(el: JsonElement) {
-            when (el) {
-                is JsonArray -> el.forEach(::visit)
-                is JsonObject -> {
-                    val type = el.str("type")?.lowercase()
-                    when {
-                        type in textTypes -> leafText(el).takeIf { it.isNotBlank() }?.let { out += Block.Paragraph(it) }
-                        type in headTypes -> leafText(el).takeIf { it.isNotBlank() }?.let { out += Block.Heading(it) }
-                        type in quoteTypes -> leafText(el).takeIf { it.isNotBlank() }?.let { out += Block.Quote(it) }
-                        type == "image" -> firstUrl(el)?.let { out += Block.Image(it, null) }
-                        type in embedTypes -> out += Block.Embed(articleUrl)
-                        else -> el.values.forEach(::visit)
+        var embedded = false
+        for (b in blocks) {
+            val o = b as? JsonObject ?: continue
+            val type = o.str("type") ?: continue
+            val m = o["model"] as? JsonObject ?: continue
+            when {
+                type == "paragraph" -> text(m).takeIf { it.isNotBlank() }?.let { out += Block.Paragraph(it) }
+                type == "fragment" -> m.str("text")?.trim()?.takeIf { it.isNotEmpty() }?.let { out += Block.Paragraph(it) }
+                type in setOf("subheadline", "crosshead", "subheading") -> text(m).takeIf { it.isNotBlank() }?.let { out += Block.Heading(it) }
+                type == "text" -> (m["blocks"] as? JsonArray)?.let { out += convert(it, url) }
+                type == "unorderedList" || type == "orderedList" ->
+                    (m["blocks"] as? JsonArray)?.forEachIndexed { i, item ->
+                        val t = leafText(item)
+                        if (t.isNotBlank()) out += Block.Paragraph((if (type == "orderedList") "${i + 1}. " else "• ") + t)
                     }
-                }
-                else -> {}
+                type.lowercase() in setOf("quote", "pullquote", "pull-quote") -> text(m).takeIf { it.isNotBlank() }?.let { out += Block.Quote(it) }
+                type == "image" -> image(m)?.let { out += it }
+                type in skip -> {}
+                type.lowercase() in embeds -> if (!embedded) { out += Block.Embed(url); embedded = true }
             }
         }
-        visit(root)
         return out
     }
 
+    private fun image(m: JsonObject): Block.Image? {
+        val src = (m["image"] as? JsonObject)?.str("src") ?: return null
+        val caption = m["caption"]?.let(::leafText)?.takeIf { it.isNotBlank() }
+        return Block.Image(src.replace(Regex("/standard/\\d+/"), "/standard/800/"), caption)
+    }
+
+    private fun text(m: JsonObject): String = m.str("text")?.trim() ?: leafText(m)
+
     /** Concatenates all string "text" leaves under an element (BBC nests fragments inside paragraphs). */
-    private fun leafText(el: JsonElement): String {
+    internal fun leafText(el: JsonElement): String {
         val sb = StringBuilder()
         fun go(e: JsonElement) {
             when (e) {
                 is JsonArray -> e.forEach(::go)
                 is JsonObject -> {
-                    (e["text"] as? JsonPrimitive)?.takeIf { it.isString }?.let { sb.append(it.content) }
-                    e.forEach { (k, v) -> if (k != "text") go(v) }
+                    val t = e["text"] as? JsonPrimitive
+                    if (t != null && t.isString) sb.append(t.content) else e.values.forEach(::go)
                 }
                 else -> {}
             }
         }
         go(el)
         return sb.toString().trim()
-    }
-
-    private fun firstUrl(el: JsonElement): String? {
-        var found: String? = null
-        fun go(e: JsonElement) {
-            if (found != null) return
-            when (e) {
-                is JsonArray -> e.forEach(::go)
-                is JsonObject -> e.values.forEach(::go)
-                is JsonPrimitive -> if (e.isString && e.content.startsWith("http") && Regex("""\.(jpe?g|png|webp)""").containsMatchIn(e.content)) found = e.content.replace("{width}", "800")
-                else -> {}
-            }
-        }
-        go(el)
-        return found
     }
 }

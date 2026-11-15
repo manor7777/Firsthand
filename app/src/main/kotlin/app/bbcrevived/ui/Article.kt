@@ -124,7 +124,7 @@ private fun LivePage(s: Story, posts: List<LivePost>?, loadLive: (Story) -> Unit
             items(posts, key = { it.id }) { p ->
                 Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                     Column(Modifier.padding(14.dp)) {
-                        Text((if (p.pinned) "PINNED · " else "") + (p.time?.replace('T', ' ')?.take(16) ?: ""), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text((if (p.pinned) "PINNED · " else "") + (if (p.breaking) "BREAKING · " else "") + (p.time ?: ""), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         p.title?.let { Text(it, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 4.dp)) }
                         p.blocks.forEach { b -> BlockView(b) }
                     }
