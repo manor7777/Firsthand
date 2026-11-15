@@ -31,6 +31,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     val refreshing by vm.refreshing.collectAsStateWithLifecycle()
     val pool by vm.searchPool.collectAsStateWithLifecycle()
     val blocks by vm.blocks.collectAsStateWithLifecycle()
+    val live by vm.live.collectAsStateWithLifecycle()
     val open: (List<Story>, Int) -> Unit = { l, i -> reader = l to i }
 
     BackHandler(enabled = searching && reader == null) { searching = false; query = "" }
@@ -50,7 +51,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
             modifier = Modifier.align(Alignment.BottomCenter),
         )
         AnimatedVisibility(reader != null, enter = slideInHorizontally { it }, exit = slideOutHorizontally { it }) {
-            reader?.let { (l, i) -> ArticlePager(l, i, blocks, vm::loadArticle) { reader = null } }
+            reader?.let { (l, i) -> ArticlePager(l, i, blocks, vm::loadArticle, live, vm::loadLive) { reader = null } }
         }
     }
 }

@@ -51,4 +51,8 @@ class Repository(ctx: Context) {
 
     suspend fun article(story: Story): List<Block> =
         runCatching { ArticleParser.parse(get(story.url), story.url) }.getOrDefault(emptyList())
+
+    /** Live pages are always fetched fresh (cache only as offline fallback inside get()). */
+    suspend fun live(story: Story): List<LivePost> =
+        runCatching { LiveParser.parse(get(story.url), story.url) }.getOrDefault(emptyList())
 }

@@ -39,6 +39,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _refreshing.value = false
     }
 
+    private val _live = MutableStateFlow<Map<String, List<LivePost>>>(emptyMap())
+    val live = _live.asStateFlow()
+
+    fun loadLive(s: Story) { viewModelScope.launch { _live.update { it + (s.url to repo.live(s)) } } }
+
     fun setCategories(list: List<String>) { viewModelScope.launch { prefs.set(list) } }
 
     fun loadArticle(s: Story) {

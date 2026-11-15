@@ -27,4 +27,12 @@ class ParserTest {
         val b = ArticleParser.parse(html, "u")
         assertEquals(Block.Paragraph("Hi there"), b[0]); assertEquals(Block.Heading("Head"), b[1]); assertTrue(b[2] is Block.Embed)
     }
+
+    @Test fun live() {
+        val html = """<script id="__NEXT_DATA__" type="application/json">{"posts":[
+          {"id":"a","firstPublished":"2026-11-14T10:00:00Z","pinned":false,"title":"Old","blocks":[{"type":"paragraph","model":{"text":"one"}}]},
+          {"id":"b","firstPublished":"2026-11-14T11:00:00Z","pinned":false,"blocks":[{"type":"paragraph","model":{"text":"two"}}]},
+          {"id":"c","firstPublished":"2026-11-14T09:00:00Z","pinned":true,"blocks":[{"type":"paragraph","model":{"text":"top"}}]}]}</script>"""
+        assertEquals(listOf("c", "b", "a"), LiveParser.parse(html, "u").map { it.id })
+    }
 }

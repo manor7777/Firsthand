@@ -15,6 +15,11 @@ object ArticleParser {
 
     fun parse(html: String, articleUrl: String): List<Block> {
         val root = NextData.extract(html) ?: return emptyList()
+        return blocksOf(root, articleUrl)
+    }
+
+    /** Extracts native blocks from any JSON subtree (whole article or a single live post). */
+    fun blocksOf(root: JsonElement, articleUrl: String): List<Block> {
         val out = ArrayList<Block>()
         fun visit(el: JsonElement) {
             when (el) {

@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.activity.compose.BackHandler
 import app.bbcrevived.data.Block
+import app.bbcrevived.data.LivePost
+import kotlinx.coroutines.delay
 import app.bbcrevived.data.Story
 import coil.compose.AsyncImage
 import dev.chrisbanes.haze.HazeState
@@ -31,7 +33,7 @@ import dev.chrisbanes.haze.haze
 @Composable
 fun ArticlePager(
     stories: List<Story>, start: Int, blocks: Map<String, List<Block>>,
-    load: (Story) -> Unit, onClose: () -> Unit,
+    load: (Story) -> Unit, live: Map<String, List<LivePost>>, loadLive: (Story) -> Unit, onClose: () -> Unit,
 ) {
     BackHandler(onBack = onClose)
     val hz = remember { HazeState() }
@@ -41,7 +43,7 @@ fun ArticlePager(
             HorizontalPager(pager, Modifier.fillMaxSize().haze(hz), beyondViewportPageCount = 1) { p ->
                 val s = stories[p]
                 LaunchedEffect(s.url) { load(s) }
-                ArticlePage(s, blocks[s.url])
+                if (s.isLive) LivePage(s, live[s.url], loadLive, pager.currentPage == p) else ArticlePage(s, blocks[s.url])
             }
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClose, Modifier.glass(hz)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
@@ -98,4 +100,36 @@ fun InlineEmbed(url: String) {
         factory = { c -> WebView(c).apply { settings.javaScriptEnabled = true; settings.domStorageEnabled = true; setBackgroundColor(0); loadUrl(url) } },
         modifier = Modifier.fillMaxWidth().height(420.dp).padding(vertical = 8.dp),
     )
+}
+
+/** Native live timeline: pinned posts first, newest next, re-polled every 30s while this page is on screen. */
+@Composable
+private fun LivePage(s: Story, posts: List<LivePost>?, loadLive: (Story) -> Unit, visible: Boolean) {
+    LaunchedEffect(s.url, visible) {
+        if (!visible) return@LaunchedEffect
+        while (true) { loadLive(s); delay(30_000) }
+    }
+    when {
+        posts == null -> Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
+        posts.isEmpty() -> Column(Modifier.fillMaxSize()) {
+            Spacer(Modifier.height(72.dp))
+            Text(s.title, Modifier.padding(20.dp), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            InlineEmbed(s.url) // format not recognised: show the live page itself, inline
+        }
+        else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 80.dp, bottom = 48.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            item {
+                Text(s.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text("LIVE · updates every 30 s", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelLarge)
+            }
+            items(posts, key = { it.id }) { p ->
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+                    Column(Modifier.padding(14.dp)) {
+                        Text((if (p.pinned) "PINNED · " else "") + (p.time?.replace('T', ' ')?.take(16) ?: ""), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        p.title?.let { Text(it, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 4.dp)) }
+                        p.blocks.forEach { b -> BlockView(b) }
+                    }
+                }
+            }
+        }
+    }
 }

@@ -37,3 +37,11 @@ object Categories {
     const val TOP = "https://feeds.bbci.co.uk/news/rss.xml"
     const val HOMEPAGE = "https://www.bbc.co.uk/news"
 }
+
+data class LivePost(
+    val id: String,
+    val time: String?,
+    val title: String?,
+    val blocks: List<Block>,
+    val pinned: Boolean,
+)
