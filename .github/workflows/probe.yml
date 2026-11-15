@@ -16,7 +16,7 @@ jobs:
         run: |
           d=fixtures/probe; mkdir -p $d; : > $d/_summary.txt
           UA='Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36'
-          get() { curl -sL -m 30 -A "$UA" -w "%{http_code} %{content_type} $1\n" -o "$d/$2" "$1" >> $d/_summary.txt; }
+          get() { curl -sL -m 30 -A "$UA" -w "%{http_code} %{content_type} $1\n" -o "$d/$2" "$1" >> $d/_summary.txt || echo "FAIL $1" >> $d/_summary.txt; }
           get "https://www.bbc.co.uk/search?q=diabetes&d=NEWS_GNL" search_news.html
           get "https://www.bbc.co.uk/search?q=diabetes" search_all.html
           get "https://www.bbc.co.uk/news/topics/c48yrnxyk79t" topic.html
@@ -26,7 +26,7 @@ jobs:
           get "https://www.bbc.co.uk/search/suggest?q=diab" suggest.json
           get "https://search-suggest.api.bbci.co.uk/search-suggest/diabetes" suggest2.json
           get "https://www.bbc.co.uk/news/topics" topics_index.html
-          for f in $d/*.html; do echo "== $f: $(wc -c < $f) bytes; INITIAL_DATA: $(grep -c '__INITIAL_DATA__' $f)" >> $d/_summary.txt; done
+          for f in $d/*.html; do [ -f "$f" ] || continue; echo "== $f: $(wc -c < $f) bytes; INITIAL_DATA: $(grep -c '__INITIAL_DATA__' $f)" >> $d/_summary.txt; done
           cat $d/_summary.txt
       - name: Commit
         run: |
