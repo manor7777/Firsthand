@@ -1,0 +1,38 @@
+name: Capture BBC fixtures
+# One-off helper: downloads real BBC pages on a GitHub runner (which has open internet) and commits them as test fixtures.
+on:
+  workflow_dispatch:
+  push:
+    paths: [".github/workflows/fixtures.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ github.ref_name }}" }
+      - name: Fetch pages
+        run: |
+          d=fixtures/real; mkdir -p $d
+          UA='Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36'
+          get() { curl -sL -m 30 -A "$UA" -w "%{http_code} $1\n" -o "$d/$2" "$1" >> $d/_summary.txt; }
+          : > $d/_summary.txt
+          get https://feeds.bbci.co.uk/news/rss.xml top.xml
+          get https://www.bbc.co.uk/news home.html
+          art=$(grep -o 'https://www.bbc.co.uk/news/articles/[A-Za-z0-9]*' $d/top.xml | head -1)
+          [ -n "$art" ] && get "$art" article.html
+          live=$(grep -oh 'https://www.bbc.co.uk/news/live/[A-Za-z0-9]*' $d/top.xml $d/home.html | head -1)
+          [ -z "$live" ] && live=$(grep -oh '/news/live/[A-Za-z0-9]*' $d/home.html | head -1 | sed 's#^#https://www.bbc.co.uk#')
+          [ -n "$live" ] && get "$live" live.html
+          for f in $d/*.html; do
+            echo "== $f: $(wc -c < $f) bytes; NEXT_DATA count: $(grep -c '__NEXT_DATA__' $f)" >> $d/_summary.txt
+            grep -o '<script[^>]*id="[^"]*"' $f | head -10 >> $d/_summary.txt
+          done
+          cat $d/_summary.txt
+      - name: Commit
+        run: |
+          git config user.name "fixtures-bot"; git config user.email "fixtures-bot@users.noreply.github.com"
+          git add fixtures && git commit -m "Capture real BBC fixtures" && git push
