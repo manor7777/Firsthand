@@ -17,7 +17,7 @@ class Prefs(private val ctx: Context) {
     private val default = listOf("World", "Tech", "Sport", "Science")
 
     val categories: Flow<List<String>> = ctx.store.data.map { p ->
-        p[key]?.split('|')?.map(Categories::normalize)?.filter { it in Categories.feeds || Categories.isKeyword(it) }?.distinct() ?: default
+        p[key]?.let { v -> (if ('\n' in v) v.split('\n') else v.split('|')) }?.map(Categories::normalize)?.filter(Categories::isValid)?.distinct() ?: default
     }
 
     private val accentKey = stringPreferencesKey("accent")
@@ -44,5 +44,5 @@ class Prefs(private val ctx: Context) {
     suspend fun setAlertInterval(v: Int) { ctx.store.edit { it[aInterval] = v } }
     suspend fun setAlertSeen(v: List<String>) { ctx.store.edit { it[aSeen] = v.joinToString("\n") } }
 
-    suspend fun set(list: List<String>) { ctx.store.edit { it[key] = list.joinToString("|") } }
+    suspend fun set(list: List<String>) { ctx.store.edit { it[key] = list.joinToString("\n") } }
 }

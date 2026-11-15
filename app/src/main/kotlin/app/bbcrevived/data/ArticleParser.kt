@@ -15,6 +15,17 @@ object ArticleParser {
         return convert(blocks, articleUrl)
     }
 
+    /** BBC's "Related topics" for an article (each has a followable topic feed). */
+    fun topics(html: String): List<TopicRef> {
+        val root = InitialData.extract(html) ?: return emptyList()
+        val arr = (InitialData.widgets(root, "article").firstOrNull() as? JsonObject)?.get("topics") as? JsonArray ?: return emptyList()
+        return arr.mapNotNull { t ->
+            val id = t.str("id") ?: t.str("url")?.substringAfterLast('/') ?: return@mapNotNull null
+            val name = t.str("title") ?: return@mapNotNull null
+            TopicRef(id, name).takeIf { Regex("[a-z0-9]{6,20}").matches(id) }
+        }
+    }
+
     fun convert(blocks: JsonArray, url: String): List<Block> {
         val out = ArrayList<Block>()
         var embedded = false

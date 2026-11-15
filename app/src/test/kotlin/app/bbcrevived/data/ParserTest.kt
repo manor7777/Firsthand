@@ -7,8 +7,8 @@ import org.junit.Test
 
 /** Runs against real BBC pages captured in fixtures/real (see .github/workflows/fixtures.yml). */
 class ParserTest {
-    private fun fx(name: String): String {
-        val f = File("../fixtures/real/$name").takeIf { it.exists() } ?: File("fixtures/real/$name")
+    private fun fx(name: String, dir: String = "real"): String {
+        val f = File("../fixtures/$dir/$name").takeIf { it.exists() } ?: File("fixtures/$dir/$name")
         assumeTrue("fixture $name missing", f.exists())
         return f.readText()
     }
@@ -38,6 +38,22 @@ class ParserTest {
         assertFalse(paras.any { it.text.startsWith("Staggered age of consent to be discussed after Brand case") })
     }
 
+    @Test fun searchResults() {
+        val r = SearchParser.parse(fx("search_news.html", "probe"))
+        assertTrue("results ${r.size}", r.size >= 5)
+        assertTrue(r.all { it.url.startsWith("https://www.bbc.co.uk/news/") && it.title.isNotBlank() })
+    }
+
+    @Test fun relatedTopics() {
+        val t = ArticleParser.topics(fx("article.html"))
+        assertTrue(t.any { it.name == "Russell Brand" && it.id == "c48yrnxyk79t" })
+    }
+
+    @Test fun topicFeed() {
+        val s = RssParser.parse(fx("topic_rss.xml", "probe"), "Russell Brand")
+        assertTrue(s.isNotEmpty() && s.all { it.url.startsWith("https://www.bbc.co.uk/") })
+    }
+
     @Test fun live() {
         val p = LiveParser.parse(fx("live.html"), "https://www.bbc.co.uk/news/live/x")
         assertTrue("posts ${p.size}", p.size >= 10)
@@ -56,5 +72,13 @@ class KeywordMatchTest {
         assertEquals("Health", Categories.normalize("Health"))
         assertEquals("kw:diabetes", Categories.normalize("kw:diabetes")) // not a catalogue topic: stays a keyword
         assertEquals("kw:exampletown", Categories.normalize("kw:exampletown"))
+    }
+}
+
+class FollowIdTest {
+    @Test fun topicIds() {
+        val f = Categories.topicFollow("c48yrnxyk79t", "Russell Brand")
+        assertTrue(Categories.isValid(f)); assertEquals("c48yrnxyk79t", Categories.topicId(f)); assertEquals("Russell Brand", Categories.label(f))
+        assertFalse(Categories.isValid("topic:../evil|x"))
     }
 }

@@ -40,6 +40,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     val pool by vm.searchPool.collectAsStateWithLifecycle()
     val blocks by vm.blocks.collectAsStateWithLifecycle()
     val live by vm.live.collectAsStateWithLifecycle()
+    val articleTopics by vm.articleTopics.collectAsStateWithLifecycle()
     val open: (List<Story>, Int) -> Unit = { l, i -> reader = l to i }
 
     BackHandler(enabled = searching && reader == null) { searching = false; query = "" }
@@ -59,7 +60,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
             modifier = Modifier.align(Alignment.BottomCenter),
         )
         AnimatedVisibility(reader != null, enter = slideInHorizontally { it }, exit = slideOutHorizontally { it }) {
-            reader?.let { (l, i) -> ArticlePager(l, i, blocks, vm::loadArticle, live, vm::loadLive) { reader = null } }
+            reader?.let { (l, i) -> ArticlePager(l, i, blocks, vm::loadArticle, live, vm::loadLive, articleTopics, cats, vm::toggleFollow) { reader = null } }
         }
         AnimatedVisibility(settingsOpen, enter = slideInHorizontally { it }, exit = slideOutHorizontally { it }) {
             SettingsScreen(accent, mode, vm::setAccent, vm::setThemeMode, vm::exportJson, vm::importJson, alerts) { settingsOpen = false }

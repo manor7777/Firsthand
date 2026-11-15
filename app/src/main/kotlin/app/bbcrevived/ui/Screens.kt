@@ -155,7 +155,7 @@ fun MyNewsEditor(hz: HazeState, selected: List<String>, onChange: (List<String>)
                 FilledTonalButton({ toggle(target); q = "" }, Modifier.fillMaxWidth()) {
                     Text(
                         if (target in selected) "Unfollow ${Categories.label(target)}"
-                        else if (target != kw) "Follow topic ${Categories.label(target)}" else "Follow keyword “$query”",
+                        else if (target != kw) "Follow topic ${Categories.label(target)}" else "Follow “$query” (live BBC search)",
                     )
                 }
             }

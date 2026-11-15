@@ -45,12 +45,29 @@ class Repository(ctx: Context) {
         )
     }
 
-    suspend fun allCategories(names: Collection<String>): Map<String, List<Story>> = coroutineScope {
-        names.map { it to async { category(it) } }.associate { (k, v) -> k to v.await() }
+    /** Live BBC search as a feed: two pages of results, newest first. Used for keyword follows. */
+    suspend fun search(term: String): List<Story> = coroutineScope {
+        val q = java.net.URLEncoder.encode(term, "UTF-8")
+        listOf(1, 2).map { page ->
+            async { runCatching { SearchParser.parse(get("https://www.bbc.co.uk/search?q=$q&d=NEWS_GNL" + if (page > 1) "&page=$page" else "")) }.getOrDefault(emptyList()) }
+        }.flatMap { it.await() }.distinctBy { it.url }.sortedByDescending { it.publishedMillis }
     }
 
-    suspend fun article(story: Story): List<Block> =
-        runCatching { ArticleParser.parse(get(story.url), story.url) }.getOrDefault(emptyList())
+    /** Stories for one followed item: catalogue feed, BBC topic feed, or keyword search. */
+    suspend fun followStories(f: String): List<Story> = when {
+        Categories.isKeyword(f) -> search(f.removePrefix(Categories.KW))
+        Categories.isTopic(f) -> runCatching { RssParser.parse(get(Categories.topicFeed(Categories.topicId(f))), Categories.topicName(f)) }.getOrDefault(emptyList())
+        else -> category(f)
+    }
+
+    suspend fun allCategories(follows: Collection<String>): Map<String, List<Story>> = coroutineScope {
+        follows.map { it to async { followStories(it) } }.associate { (k, v) -> k to v.await() }
+    }
+
+    suspend fun article(story: Story): ArticleContent = runCatching {
+        val html = get(story.url)
+        ArticleContent(ArticleParser.parse(html, story.url), ArticleParser.topics(html))
+    }.getOrDefault(ArticleContent(emptyList(), emptyList()))
 
     /** Live pages are always fetched fresh (cache only as offline fallback inside get()). */
     suspend fun live(story: Story): List<LivePost> =

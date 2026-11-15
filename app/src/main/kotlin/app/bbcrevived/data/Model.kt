@@ -91,7 +91,20 @@ object Categories {
         return if (isKeyword(f)) matchKeyword(f) ?: f else f
     }
     fun isKeyword(f: String) = f.startsWith(KW)
-    fun label(f: String) = if (isKeyword(f)) "“${f.removePrefix(KW)}”" else f
+
+    /** Real BBC topics are stored as "topic:<id>|<name>" and read from feeds.bbci.co.uk/news/topics/<id>/rss.xml. */
+    const val TOPIC = "topic:"
+    fun isTopic(f: String) = f.startsWith(TOPIC)
+    fun topicId(f: String) = f.removePrefix(TOPIC).substringBefore('|')
+    fun topicName(f: String) = f.substringAfter('|')
+    fun topicFollow(id: String, name: String) = "$TOPIC$id|$name"
+    fun topicFeed(id: String) = "https://feeds.bbci.co.uk/news/topics/$id/rss.xml"
+    fun isValid(f: String) = f in feeds || isKeyword(f) || (isTopic(f) && topicId(f).matches(Regex("[a-z0-9]{6,20}")))
+    fun label(f: String) = when {
+        isKeyword(f) -> "“${f.removePrefix(KW)}”"
+        isTopic(f) -> topicName(f)
+        else -> f
+    }
     const val TOP = "https://feeds.bbci.co.uk/news/rss.xml"
     const val HOMEPAGE = "https://www.bbc.co.uk/news"
 }
@@ -104,3 +117,6 @@ data class LivePost(
     val pinned: Boolean,
     val breaking: Boolean = false,
 )
+
+data class TopicRef(val id: String, val name: String)
+data class ArticleContent(val blocks: List<Block>, val topics: List<TopicRef>)

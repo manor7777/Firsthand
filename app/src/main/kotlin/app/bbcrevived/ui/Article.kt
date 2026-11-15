@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.activity.compose.BackHandler
 import app.bbcrevived.data.Block
+import app.bbcrevived.data.Categories
+import app.bbcrevived.data.TopicRef
 import app.bbcrevived.data.LivePost
 import kotlinx.coroutines.delay
 import app.bbcrevived.data.Story
@@ -33,7 +35,8 @@ import dev.chrisbanes.haze.haze
 @Composable
 fun ArticlePager(
     stories: List<Story>, start: Int, blocks: Map<String, List<Block>>,
-    load: (Story) -> Unit, live: Map<String, List<LivePost>>, loadLive: (Story) -> Unit, onClose: () -> Unit,
+    load: (Story) -> Unit, live: Map<String, List<LivePost>>, loadLive: (Story) -> Unit,
+    topics: Map<String, List<TopicRef>>, follows: List<String>, onToggleFollow: (String) -> Unit, onClose: () -> Unit,
 ) {
     BackHandler(onBack = onClose)
     val hz = remember { HazeState() }
@@ -43,7 +46,7 @@ fun ArticlePager(
             HorizontalPager(pager, Modifier.fillMaxSize().haze(hz), beyondViewportPageCount = 1) { p ->
                 val s = stories[p]
                 LaunchedEffect(s.url) { load(s) }
-                if (s.isLive) LivePage(s, live[s.url], loadLive, pager.currentPage == p) else ArticlePage(s, blocks[s.url])
+                if (s.isLive) LivePage(s, live[s.url], loadLive, pager.currentPage == p) else ArticlePage(s, blocks[s.url], topics[s.url].orEmpty(), follows, onToggleFollow)
             }
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClose, Modifier.glass(hz)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
@@ -54,8 +57,9 @@ fun ArticlePager(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ArticlePage(s: Story, blocks: List<Block>?) {
+private fun ArticlePage(s: Story, blocks: List<Block>?, topics: List<TopicRef>, follows: List<String>, onToggleFollow: (String) -> Unit) {
     val uri = LocalUriHandler.current
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 48.dp)) {
         item { s.imageUrl?.let { AsyncImage(it, null, Modifier.fillMaxWidth().height(260.dp), contentScale = ContentScale.Crop) } ?: Spacer(Modifier.height(72.dp)) }
@@ -85,6 +89,17 @@ private fun ArticlePage(s: Story, blocks: List<Block>?) {
                     item { Text(cap, Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
                 items(body) { b -> BlockView(b) }
+            }
+        }
+        if (topics.isNotEmpty()) item {
+            Column(Modifier.padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("RELATED TOPICS · tap to follow", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    topics.forEach { t ->
+                        val f = Categories.topicFollow(t.id, t.name)
+                        FilterChip(f in follows, { onToggleFollow(f) }, { Text(t.name) }, Modifier.padding(bottom = 4.dp))
+                    }
+                }
             }
         }
     }

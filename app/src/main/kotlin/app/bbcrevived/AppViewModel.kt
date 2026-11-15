@@ -40,7 +40,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Validates then applies an exported settings file. Returns false if it isn't one. */
     fun importJson(text: String): Boolean = runCatching {
         val e = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }.decodeFromString(SettingsExport.serializer(), text)
-        val follows = e.follows.map(Categories::normalize).filter { it in Categories.feeds || Categories.isKeyword(it) }.distinct()
+        val follows = e.follows.map(Categories::normalize).filter(Categories::isValid).distinct()
         val accent = if (e.accent == "dynamic" || Regex("#[0-9A-Fa-f]{6}").matches(e.accent)) e.accent else "dynamic"
         val theme = if (e.theme in setOf("system", "light", "dark")) e.theme else "system"
         viewModelScope.launch {
@@ -60,14 +60,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val refreshing = _refreshing.asStateFlow()
     private val _blocks = MutableStateFlow<Map<String, List<Block>>>(emptyMap())
     val blocks = _blocks.asStateFlow()
+    private val _articleTopics = MutableStateFlow<Map<String, List<TopicRef>>>(emptyMap())
+    val articleTopics = _articleTopics.asStateFlow()
+
+    fun toggleFollow(f: String) { val c = categories.value; setCategories(if (f in c) c - f else c + f) }
 
     /** Stories per followed item, in the user's order. Keywords match across everything loaded. */
     val topicStories: StateFlow<Map<String, List<Story>>> = combine(categories, _byCat, _home, _top) { cats, by, h, top ->
         val pool = (h.breaking + h.mostRead + top + by.values.flatten()).distinctBy { it.url }
         cats.associateWith { c ->
             if (Categories.isKeyword(c)) {
+                // BBC search results, plus anything already loaded that mentions the word.
                 val k = c.removePrefix(Categories.KW).lowercase()
-                pool.filter { (it.title + " " + it.summary).lowercase().contains(k) }
+                (by[c].orEmpty() + pool.filter { (it.title + " " + it.summary).lowercase().contains(k) }).distinctBy { it.url }
             } else by[c].orEmpty()
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
@@ -88,7 +93,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         // Load feeds for followed topics as the list changes (only what's missing).
         viewModelScope.launch {
             categories.collect { cats ->
-                val missing = cats.filter { !Categories.isKeyword(it) && it !in _byCat.value }
+                val missing = cats.filter { it !in _byCat.value }
                 if (missing.isNotEmpty()) _byCat.update { it + repo.allCategories(missing) }
             }
         }
@@ -99,7 +104,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _refreshing.value = true
         _home.value = repo.home()
         _top.value = repo.top()
-        _byCat.value = repo.allCategories(categories.value.filter { !Categories.isKeyword(it) })
+        _byCat.value = repo.allCategories(categories.value)
         _refreshing.value = false
     }
 
@@ -112,6 +117,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun loadArticle(s: Story) {
         if (_blocks.value.containsKey(s.url)) return
-        viewModelScope.launch { _blocks.update { it + (s.url to repo.article(s)) } }
+        viewModelScope.launch {
+            val a = repo.article(s)
+            _blocks.update { it + (s.url to a.blocks) }
+            _articleTopics.update { it + (s.url to a.topics) }
+        }
     }
 }

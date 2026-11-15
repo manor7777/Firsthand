@@ -76,7 +76,7 @@ class BreakingWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(c
 
         if (prefs.alertOnlyFollows.first() && candidates.isNotEmpty()) {
             val follows = prefs.categories.first()
-            val urls = follows.filter { it in Categories.feeds }.flatMap { repo.category(it) }.map { it.url }.toSet()
+            val urls = follows.filter { !Categories.isKeyword(it) }.flatMap { repo.followStories(it) }.map { it.url }.toSet()
             val kws = follows.filter(Categories::isKeyword).map { it.removePrefix(Categories.KW).lowercase() }
             candidates = candidates.filter { s -> s.url in urls || kws.any { (s.title + " " + s.summary).lowercase().contains(it) } }
         }
