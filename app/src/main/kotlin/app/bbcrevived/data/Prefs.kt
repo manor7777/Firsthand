@@ -15,7 +15,7 @@ class Prefs(private val ctx: Context) {
     private val default = listOf("World", "Tech", "Sport", "Science")
 
     val categories: Flow<List<String>> = ctx.store.data.map { p ->
-        p[key]?.split('|')?.filter { it in Categories.feeds } ?: default
+        p[key]?.split('|')?.filter { it in Categories.feeds || Categories.isKeyword(it) } ?: default
     }
 
     suspend fun set(list: List<String>) { ctx.store.edit { it[key] = list.joinToString("|") } }

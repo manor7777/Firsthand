@@ -120,23 +120,51 @@ fun HomeScreen(
 @Composable
 fun MyNewsScreen(hz: HazeState, selected: List<String>, onChange: (List<String>) -> Unit) {
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    Column(Modifier.fillMaxSize().haze(hz).padding(horizontal = 18.dp).padding(top = top + 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("My News", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("Pick categories. The order sets how For you is mixed.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Categories.feeds.keys.forEach { c ->
-                FilterChip(c in selected, { onChange(if (c in selected) selected - c else selected + c) }, { Text(c) }, Modifier.padding(bottom = 4.dp))
-            }
+    var q by rememberSaveable { mutableStateOf("") }
+    val query = q.trim()
+    val matches = remember(query) { Categories.catalog.filter { query.isEmpty() || it.name.contains(query, true) || it.group.contains(query, true) } }
+    val kw = Categories.KW + query.lowercase()
+    fun toggle(f: String) = onChange(if (f in selected) selected - f else selected + f)
+    fun move(i: Int, d: Int) = onChange(selected.toMutableList().also { it.add(i + d, it.removeAt(i)) })
+
+    LazyColumn(
+        Modifier.fillMaxSize().haze(hz),
+        contentPadding = PaddingValues(18.dp, top + 16.dp, 18.dp, 130.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        item {
+            Text("My News", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text("Follow topics or any keyword. Order sets how For you is mixed.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        SectionLabel("Your order")
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(bottom = 130.dp)) {
+        item {
+            OutlinedTextField(q, { q = it }, Modifier.fillMaxWidth(), singleLine = true, placeholder = { Text("Search topics or follow a keyword") }, shape = RoundedCornerShape(28.dp))
+        }
+        if (query.isNotEmpty()) {
+            item {
+                FilledTonalButton({ toggle(kw); q = "" }, Modifier.fillMaxWidth()) {
+                    Text(if (kw in selected) "Unfollow “$query”" else "Follow keyword “$query”")
+                }
+            }
+            if (matches.isEmpty()) item { Text("No matching topics.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
+        if (selected.isNotEmpty() && query.isEmpty()) {
+            item { SectionLabel("Following · ${selected.size}") }
             itemsIndexed(selected) { i, c ->
                 Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                     Row(Modifier.padding(start = 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(c, Modifier.weight(1f))
-                        TextButton({ if (i > 0) onChange(selected.toMutableList().also { it.add(i - 1, it.removeAt(i)) }) }) { Text("↑") }
-                        TextButton({ if (i < selected.lastIndex) onChange(selected.toMutableList().also { it.add(i + 1, it.removeAt(i)) }) }) { Text("↓") }
+                        Text(Categories.label(c), Modifier.weight(1f))
+                        TextButton({ if (i > 0) move(i, -1) }) { Text("↑") }
+                        TextButton({ if (i < selected.lastIndex) move(i, 1) }) { Text("↓") }
+                        TextButton({ toggle(c) }) { Text("Remove") }
                     }
+                }
+            }
+        }
+        matches.groupBy { it.group }.forEach { (group, topics) ->
+            item { SectionLabel(group) }
+            item {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    topics.forEach { t -> FilterChip(t.name in selected, { toggle(t.name) }, { Text(t.name) }, Modifier.padding(bottom = 4.dp)) }
                 }
             }
         }
