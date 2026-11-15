@@ -1,0 +1,14 @@
+200 text/html https://www.bbc.co.uk/search?q=diabetes&d=NEWS_GNL
+200 text/html https://www.bbc.co.uk/search?q=diabetes
+200 text/html https://www.bbc.co.uk/news/topics/c48yrnxyk79t
+200 text/xml; charset=utf-8 https://feeds.bbci.co.uk/news/topics/c48yrnxyk79t/rss.xml
+200 text/xml; charset=utf-8 https://www.bbc.co.uk/news/topics/c48yrnxyk79t/rss.xml
+200 text/xml; charset=utf-8 https://www.bbc.co.uk/news/health/rss.xml
+404 text/html; charset=utf-8 https://www.bbc.co.uk/search/suggest?q=diab
+000  https://search-suggest.api.bbci.co.uk/search-suggest/diabetes
+FAIL https://search-suggest.api.bbci.co.uk/search-suggest/diabetes
+404 text/html; charset=utf-8 https://www.bbc.co.uk/news/topics
+== fixtures/probe/search_all.html: 195266 bytes; INITIAL_DATA: 1
+== fixtures/probe/search_news.html: 195281 bytes; INITIAL_DATA: 1
+== fixtures/probe/topic.html: 320752 bytes; INITIAL_DATA: 1
+== fixtures/probe/topics_index.html: 32445 bytes; INITIAL_DATA: 0
