@@ -63,10 +63,13 @@ half4 main(float2 p) {
 
 @androidx.annotation.RequiresApi(33)
 private fun Modifier.lensHighlight(): Modifier = drawWithCache {
-    val shader = RuntimeShader(LENS_SRC)
-    shader.setFloatUniform("size", size.width, size.height)
-    val brush = ShaderBrush(shader)
-    onDrawWithContent { drawContent(); drawRect(brush) }
+    // If the shader fails to compile on some GPU/driver, skip the highlight instead of crashing.
+    val brush = runCatching {
+        val shader = RuntimeShader(LENS_SRC)
+        shader.setFloatUniform("size", size.width, size.height)
+        ShaderBrush(shader)
+    }.getOrNull()
+    onDrawWithContent { drawContent(); brush?.let { drawRect(it) } }
 }
 
 /** Glass pill with a highlight that slides between equal-width items with a springy overshoot. */
