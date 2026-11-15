@@ -45,3 +45,16 @@ class ParserTest {
         assertTrue(p.first().time!!.isNotBlank())
     }
 }
+
+class KeywordMatchTest {
+    @Test fun keywordsBecomeTopics() {
+        assertEquals("Science & Environment", Categories.normalize("kw:science"))
+        assertEquals("Science & Environment", Categories.normalize("Science"))
+        assertEquals("Football", Categories.normalize("kw:Football"))
+        assertEquals("Formula 1", Categories.normalize("kw:f1"))
+        assertEquals("US & Canada", Categories.normalize("kw:us and canada"))
+        assertEquals("Health", Categories.normalize("Health"))
+        assertEquals("kw:diabetes", Categories.normalize("kw:diabetes")) // not a catalogue topic: stays a keyword
+        assertEquals("kw:exampletown", Categories.normalize("kw:exampletown"))
+    }
+}

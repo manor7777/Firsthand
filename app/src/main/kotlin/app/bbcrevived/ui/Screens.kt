@@ -151,8 +151,12 @@ fun MyNewsEditor(hz: HazeState, selected: List<String>, onChange: (List<String>)
         }
         if (query.isNotEmpty()) {
             item {
-                FilledTonalButton({ toggle(kw); q = "" }, Modifier.fillMaxWidth()) {
-                    Text(if (kw in selected) "Unfollow “$query”" else "Follow keyword “$query”")
+                val target = Categories.normalize(kw) // a keyword that names a topic follows the topic
+                FilledTonalButton({ toggle(target); q = "" }, Modifier.fillMaxWidth()) {
+                    Text(
+                        if (target in selected) "Unfollow ${Categories.label(target)}"
+                        else if (target != kw) "Follow topic ${Categories.label(target)}" else "Follow keyword “$query”",
+                    )
                 }
             }
             if (matches.isEmpty()) item { Text("No matching topics.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
