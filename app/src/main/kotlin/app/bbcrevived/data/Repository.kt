@@ -53,6 +53,16 @@ class Repository(ctx: Context) {
         }.flatMap { it.await() }.distinctBy { it.url }.sortedByDescending { it.publishedMillis }
     }
 
+    /**
+     * Finds the real BBC topic for a word. BBC has no topic index, so read the "Related topics" tags on the
+     * top search results and pick the one whose name is exactly the word.
+     */
+    suspend fun resolveTopic(term: String): TopicRef? = coroutineScope {
+        val urls = search(term).filter { "/news/articles/" in it.url }.take(6).map { it.url }
+        val topics = urls.map { u -> async { runCatching { ArticleParser.topics(get(u)) }.getOrDefault(emptyList()) } }.flatMap { it.await() }
+        ArticleParser.pickTopic(topics, term)
+    }
+
     /** Stories for one followed item: catalogue feed, BBC topic feed, or keyword search. */
     suspend fun followStories(f: String): List<Story> = when {
         Categories.isKeyword(f) -> search(f.removePrefix(Categories.KW))

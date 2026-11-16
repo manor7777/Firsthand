@@ -42,6 +42,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     val cats by vm.categories.collectAsStateWithLifecycle()
     val refreshing by vm.refreshing.collectAsStateWithLifecycle()
     val pool by vm.searchPool.collectAsStateWithLifecycle()
+    val hits by vm.searchHits.collectAsStateWithLifecycle()
     val blocks by vm.blocks.collectAsStateWithLifecycle()
     val live by vm.live.collectAsStateWithLifecycle()
     val articleTopics by vm.articleTopics.collectAsStateWithLifecycle()
@@ -52,7 +53,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     Box(Modifier.fillMaxSize()) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
             when {
-                searching -> SearchScreen(hz, query, pool, open)
+                searching -> SearchScreen(hz, query, pool, hits, vm::search, open)
                 tab == Tab.Home -> HomeScreen(hz, home.breaking, home.mostRead, forYou, refreshing, vm::refresh, open) { settingsOpen = true }
                 else -> MyNewsScreen(hz, cats, topics, vm::setCategories, open) { settingsOpen = true }
             }

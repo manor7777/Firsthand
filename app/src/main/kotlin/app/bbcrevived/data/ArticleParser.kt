@@ -26,6 +26,12 @@ object ArticleParser {
         }
     }
 
+    /** The topic whose name is exactly the search term (case-insensitive), if any. */
+    fun pickTopic(topics: List<TopicRef>, term: String): TopicRef? {
+        val want = term.trim().lowercase()
+        return if (want.isEmpty()) null else topics.firstOrNull { it.name.trim().lowercase() == want }
+    }
+
     fun convert(blocks: JsonArray, url: String): List<Block> {
         val out = ArrayList<Block>()
         var embedded = false

@@ -82,3 +82,13 @@ class FollowIdTest {
         assertFalse(Categories.isValid("topic:../evil|x"))
     }
 }
+
+class TopicPickTest {
+    private val topics = listOf(TopicRef("c1aaaaaaaaaa", "Diabetes"), TopicRef("c2aaaaaaaaaa", "Type 1 diabetes"), TopicRef("c3aaaaaaaaaa", "NHS"))
+    @Test fun exactNameOnly() {
+        assertEquals("c1aaaaaaaaaa", ArticleParser.pickTopic(topics, "diabetes")?.id)
+        assertEquals("c1aaaaaaaaaa", ArticleParser.pickTopic(topics, "  Diabetes ")?.id)
+        assertNull(ArticleParser.pickTopic(topics, "boy"))
+        assertNull(ArticleParser.pickTopic(topics, ""))
+    }
+}

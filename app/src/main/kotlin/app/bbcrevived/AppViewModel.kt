@@ -63,6 +63,28 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _articleTopics = MutableStateFlow<Map<String, List<TopicRef>>>(emptyMap())
     val articleTopics = _articleTopics.asStateFlow()
 
+    private val _searchHits = MutableStateFlow("" to emptyList<Story>())
+    /** Live BBC search results for the Search tab, tagged with the query they answer. */
+    val searchHits = _searchHits.asStateFlow()
+    private var searchJob: kotlinx.coroutines.Job? = null
+    fun search(q: String) {
+        searchJob?.cancel()
+        val t = q.trim()
+        if (t.length < 2) { _searchHits.value = "" to emptyList(); return }
+        searchJob = viewModelScope.launch { kotlinx.coroutines.delay(400); _searchHits.value = t to repo.search(t) }
+    }
+
+    private val triedKeywords = mutableSetOf<String>()
+    /** Turns keyword follows into real BBC topic follows where a matching topic exists (once per keyword per launch). */
+    private fun resolveKeywords() = viewModelScope.launch {
+        for (c in categories.value.filter { Categories.isKeyword(it) && triedKeywords.add(it) }) {
+            val t = repo.resolveTopic(c.removePrefix(Categories.KW)) ?: continue
+            val f = Categories.topicFollow(t.id, t.name)
+            val cur = categories.value
+            if (c in cur) prefs.set(cur.map { if (it == c) f else it }.distinct())
+        }
+    }
+
     /** A story to open on screen, set when the app is launched from an alert. */
     val pendingOpen = MutableStateFlow<Story?>(null)
 
@@ -98,6 +120,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             categories.collect { cats ->
                 val missing = cats.filter { it !in _byCat.value }
                 if (missing.isNotEmpty()) _byCat.update { it + repo.allCategories(missing) }
+                resolveKeywords()
             }
         }
         refresh()
