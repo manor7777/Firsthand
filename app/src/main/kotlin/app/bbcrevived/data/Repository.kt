@@ -58,7 +58,9 @@ class Repository(ctx: Context) {
      * top search results and pick the one whose name is exactly the word.
      */
     suspend fun resolveTopic(term: String): TopicRef? = coroutineScope {
-        val urls = search(term).filter { "/news/articles/" in it.url }.take(6).map { it.url }
+        val urls = search(term).filter { "/news/articles/" in it.url }.take(12).map { it.url }
+        // No results at all usually means we're offline: signal "try again later" rather than "no such topic".
+        if (urls.isEmpty()) throw IllegalStateException("no search results")
         val topics = urls.map { u -> async { runCatching { ArticleParser.topics(get(u)) }.getOrDefault(emptyList()) } }.flatMap { it.await() }
         ArticleParser.pickTopic(topics, term)
     }

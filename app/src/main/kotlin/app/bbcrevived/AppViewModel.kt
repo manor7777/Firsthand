@@ -78,7 +78,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Turns keyword follows into real BBC topic follows where a matching topic exists (once per keyword per launch). */
     private fun resolveKeywords() = viewModelScope.launch {
         for (c in categories.value.filter { Categories.isKeyword(it) && triedKeywords.add(it) }) {
-            val t = repo.resolveTopic(c.removePrefix(Categories.KW)) ?: continue
+            val t = runCatching { repo.resolveTopic(c.removePrefix(Categories.KW)) }
+                .onFailure { triedKeywords.remove(c) } // retry on the next refresh/launch
+                .getOrNull() ?: continue
             val f = Categories.topicFollow(t.id, t.name)
             val cur = categories.value
             if (c in cur) prefs.set(cur.map { if (it == c) f else it }.distinct())
