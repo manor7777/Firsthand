@@ -43,5 +43,6 @@ for term in ["diabetes", "exampletown", "disability", "jeremy clarkson"]:
         out.append(f"  {n:2d}x {name}  [{ids[name]}]")
     exact = [n for n in counts if n.strip().lower() == term]
     out.append(f"  EXACT MATCH: {exact or 'none'}")
+import os; os.makedirs("fixtures/probe2", exist_ok=True)
 open("fixtures/probe2/resolve.txt", "w").write("\n".join(out))
 print("\n".join(out))

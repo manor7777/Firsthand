@@ -208,3 +208,50 @@ fun SearchScreen(
         itemsIndexed(results) { i, s -> StoryCard(s, false) { onOpen(results, i) } }
     }
 }
+
+/** My News: followed topics in the user's order (like the BBC app). Pencil opens the editor. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun MyNewsScreen(
+    hz: HazeState, selected: List<String>, topics: Map<String, List<Story>>,
+    onChange: (List<String>) -> Unit, onOpen: (List<Story>, Int) -> Unit, onSettings: () -> Unit,
+) {
+    var editing by rememberSaveable { mutableStateOf(false) }
+    var filter by rememberSaveable { mutableStateOf<String?>(null) } // null = all sections
+    if (editing || selected.isEmpty()) {
+        MyNewsEditor(hz, selected, onChange) { editing = false }
+        return
+    }
+    val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val active = filter?.takeIf { it in selected }
+    Column(Modifier.fillMaxSize()) {
+        Row(Modifier.padding(start = 18.dp, end = 8.dp, top = top + 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("My News", Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            IconButton({ editing = true }) { Icon(Icons.Filled.Edit, "Edit My News") }
+            IconButton(onSettings) { Icon(Icons.Filled.Settings, "Settings") }
+        }
+        androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            item { FilterChip(active == null, { filter = null }, { Text("All") }) }
+            items(selected) { c -> FilterChip(active == c, { filter = c }, { Text(Categories.label(c)) }) }
+        }
+        LazyColumn(
+            Modifier.fillMaxSize().haze(hz),
+            contentPadding = PaddingValues(14.dp, 8.dp, 14.dp, 130.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            val shown = if (active != null) listOf(active) else selected
+            shown.forEach { c ->
+                val stories = topics[c].orEmpty()
+                val list = if (active != null) stories else stories.take(4)
+                item(key = "h-$c") {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(Categories.label(c).uppercase(), Modifier.weight(1f).padding(start = 4.dp, top = 8.dp), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        if (active == null && stories.size > 4) TextButton({ filter = c }) { Text("See all") }
+                    }
+                }
+                if (list.isEmpty()) item(key = "e-$c") { Text("Nothing loaded yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(4.dp)) }
+                itemsIndexed(list, key = { _, s -> "$c|${s.url}" }) { i, s -> StoryCard(s, big = i == 0 && active != null) { onOpen(list, i) } }
+            }
+        }
+    }
+}
