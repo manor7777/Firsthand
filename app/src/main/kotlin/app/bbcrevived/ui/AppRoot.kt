@@ -46,6 +46,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     val blocks by vm.blocks.collectAsStateWithLifecycle()
     val live by vm.live.collectAsStateWithLifecycle()
     val articleTopics by vm.articleTopics.collectAsStateWithLifecycle()
+    val videos by vm.videos.collectAsStateWithLifecycle()
     val upState by vm.update.collectAsStateWithLifecycle()
     val installResult by vm.installResult.collectAsStateWithLifecycle()
     val updates = UpdateUi(vm.installedName, upState, installResult, vm::checkForUpdate, vm::installUpdate)
@@ -68,7 +69,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
             modifier = Modifier.align(Alignment.BottomCenter),
         )
         AnimatedVisibility(reader != null, enter = slideInHorizontally { it }, exit = slideOutHorizontally { it }) {
-            reader?.let { (l, i) -> ArticlePager(l, i, blocks, vm::loadArticle, live, vm::loadLive, articleTopics, cats, vm::toggleFollow) { reader = null } }
+            reader?.let { (l, i) -> ArticlePager(l, i, blocks, vm::loadArticle, live, vm::loadLive, articleTopics, cats, vm::toggleFollow, VideoSupport(videos, vm::loadVideo, vm::videoStream)) { reader = null } }
         }
         AnimatedVisibility(settingsOpen, enter = slideInHorizontally { it }, exit = slideOutHorizontally { it }) {
             SettingsScreen(accent, mode, vm::setAccent, vm::setThemeMode, vm::exportJson, vm::importJson, alerts, updates) { settingsOpen = false }

@@ -21,8 +21,31 @@ class DeepLinksTest {
     }
 
     @Test fun unsupportedNewsPagesGoToTheBrowser() {
-        listOf("https://www.bbc.com/news", "https://www.bbc.co.uk/news/world", "https://www.bbc.com/news/videos/c999", "https://www.bbc.com/news/av/uk-123")
+        listOf("https://www.bbc.com/news", "https://www.bbc.co.uk/news/world")
             .forEach { assertTrue(it, DeepLinks.parse(it) is Link.Unsupported) }
+    }
+
+    @Test fun videoPages() {
+        // The real target of a Google share link (query string from Discover dropped).
+        assertEquals(
+            Link.Video("https://www.bbc.co.uk/news/videos/c3j4r9jgkynzo"),
+            DeepLinks.parse("https://www.bbc.co.uk/news/videos/c3j4r9jgkynzo?shem=dsdf,sharefoc,agadiscoversdl,,sh/x/discover/m1/4"),
+        )
+        assertTrue(DeepLinks.parse("https://www.bbc.com/news/av/uk-12345678") is Link.Video)
+    }
+
+    @Test fun googleShareLinks() {
+        assertTrue(DeepLinks.isShortLink("https://share.google/EuaV7JI0KoM2JP2RD"))
+        assertTrue(DeepLinks.isShortLink("https://search.app/abc"))
+        assertFalse(DeepLinks.isShortLink("https://share.google.evil.com/x"))
+        assertFalse(DeepLinks.isShortLink("https://www.bbc.com/news/articles/c1"))
+        assertNull(DeepLinks.parse("https://share.google/EuaV7JI0KoM2JP2RD")) // must be resolved first
+    }
+
+    @Test fun firstUrlInSharedText() {
+        assertEquals("https://share.google/EuaV7JI0KoM2JP2RD", DeepLinks.firstUrl("Watch: What's in the Milburn review? https://share.google/EuaV7JI0KoM2JP2RD"))
+        assertEquals("https://www.bbc.co.uk/news/articles/c1", DeepLinks.firstUrl("(see https://www.bbc.co.uk/news/articles/c1)."))
+        assertNull(DeepLinks.firstUrl("no link here"))
     }
 
     @Test fun nonNewsAndLookalikesAreRejected() {

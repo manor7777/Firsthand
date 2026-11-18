@@ -23,6 +23,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.activity.compose.BackHandler
 import app.bbcrevived.data.Block
 import app.bbcrevived.data.Categories
+import app.bbcrevived.data.DeepLinks
 import app.bbcrevived.data.TopicRef
 import app.bbcrevived.data.LivePost
 import kotlinx.coroutines.delay
@@ -37,7 +38,8 @@ import dev.chrisbanes.haze.haze
 fun ArticlePager(
     stories: List<Story>, start: Int, blocks: Map<String, List<Block>>,
     load: (Story) -> Unit, live: Map<String, List<LivePost>>, loadLive: (Story) -> Unit,
-    topics: Map<String, List<TopicRef>>, follows: List<String>, onToggleFollow: (String) -> Unit, onClose: () -> Unit,
+    topics: Map<String, List<TopicRef>>, follows: List<String>, onToggleFollow: (String) -> Unit,
+    video: VideoSupport, onClose: () -> Unit,
 ) {
     BackHandler(onBack = onClose)
     val hz = remember { HazeState() }
@@ -46,8 +48,13 @@ fun ArticlePager(
         Box(Modifier.fillMaxSize()) {
             HorizontalPager(pager, Modifier.fillMaxSize().haze(hz), beyondViewportPageCount = 1) { p ->
                 val s = stories[p]
-                LaunchedEffect(s.url) { load(s) }
-                if (s.isLive) LivePage(s, live[s.url], loadLive, pager.currentPage == p) else ArticlePage(s, blocks[s.url], topics[s.url].orEmpty(), follows, onToggleFollow)
+                LaunchedEffect(s.url) { if (DeepLinks.parse(s.url) is DeepLinks.Link.Video) video.load(s) else load(s) }
+                when {
+                    s.isLive -> LivePage(s, live[s.url], loadLive, pager.currentPage == p)
+                    DeepLinks.parse(s.url) is DeepLinks.Link.Video ->
+                        VideoPage(s, video, pager.currentPage == p, follows, onToggleFollow)
+                    else -> ArticlePage(s, blocks[s.url], topics[s.url].orEmpty(), follows, onToggleFollow)
+                }
             }
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClose, Modifier.glass(hz)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
@@ -62,8 +69,12 @@ fun ArticlePager(
 @Composable
 private fun ArticlePage(s: Story, blocks: List<Block>?, topics: List<TopicRef>, follows: List<String>, onToggleFollow: (String) -> Unit) {
     val ctx = LocalContext.current
+    // The lead photo usually appears twice: as the story's image (feed thumbnail, or BBC's "BBC NEWS"-branded share image
+    // for links) and as the first body image. Match them by file ID and show it once, preferring the clean body copy.
+    val dup = leadDuplicate(s.imageUrl, blocks)
+    val hero = (dup?.value as? Block.Image)?.url ?: s.imageUrl
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 48.dp)) {
-        item { s.imageUrl?.let { AsyncImage(it, null, Modifier.fillMaxWidth().height(260.dp), contentScale = ContentScale.Crop) } ?: Spacer(Modifier.height(72.dp)) }
+        item { hero?.let { AsyncImage(it, null, Modifier.fillMaxWidth().height(260.dp), contentScale = ContentScale.Crop) } ?: Spacer(Modifier.height(72.dp)) }
         item {
             Column(Modifier.padding(20.dp, 18.dp, 20.dp, 4.dp)) {
                 Text(s.title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
@@ -81,10 +92,6 @@ private fun ArticlePage(s: Story, blocks: List<Block>?, topics: List<TopicRef>, 
                 }
             }
             else -> {
-                // The hero already shows the lead photo; drop the same photo from the body (matched by file, any size).
-                fun key(u: String) = u.substringAfter("/standard/", u).substringAfter('/').substringBefore('.')
-                val heroKey = s.imageUrl?.let(::key)
-                val dup = if (heroKey == null) null else blocks.withIndex().firstOrNull { (i, b) -> i < 4 && b is Block.Image && key(b.url) == heroKey }
                 val body = if (dup == null) blocks else blocks.filterIndexed { i, _ -> i != dup.index }
                 (dup?.value as? Block.Image)?.caption?.let { cap ->
                     item { Text(cap, Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -92,22 +99,35 @@ private fun ArticlePage(s: Story, blocks: List<Block>?, topics: List<TopicRef>, 
                 items(body) { b -> BlockView(b) }
             }
         }
-        if (topics.isNotEmpty()) item {
-            Column(Modifier.padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("RELATED TOPICS · tap to follow", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    topics.forEach { t ->
-                        val f = Categories.topicFollow(t.id, t.name)
-                        FilterChip(f in follows, { onToggleFollow(f) }, { Text(t.name) }, Modifier.padding(bottom = 4.dp))
-                    }
-                }
+        if (topics.isNotEmpty()) item { TopicChips(topics, follows, onToggleFollow) }
+    }
+}
+
+/** BBC image file ID: the last path segment without extensions, the same across sizes, .webp copies and branded variants. */
+internal fun imageKey(u: String) = u.substringBefore('?').substringAfterLast('/').substringBefore('.')
+
+/** The body image (in the first few blocks) that is the same photo as the story's lead image, if any. */
+internal fun leadDuplicate(lead: String?, blocks: List<Block>?): IndexedValue<Block>? {
+    val k = lead?.let(::imageKey)?.takeIf { it.length >= 8 } ?: return null
+    return blocks?.withIndex()?.firstOrNull { (i, b) -> i < 4 && b is Block.Image && imageKey(b.url) == k }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun TopicChips(topics: List<TopicRef>, follows: List<String>, onToggleFollow: (String) -> Unit) {
+    Column(Modifier.padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("RELATED TOPICS · tap to follow", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            topics.forEach { t ->
+                val f = Categories.topicFollow(t.id, t.name)
+                FilterChip(f in follows, { onToggleFollow(f) }, { Text(t.name) }, Modifier.padding(bottom = 4.dp))
             }
         }
     }
 }
 
 @Composable
-private fun BlockView(b: Block) {
+internal fun BlockView(b: Block) {
     val pad = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
     when (b) {
         is Block.Paragraph -> Text(b.text, pad, style = MaterialTheme.typography.bodyLarge.copy(lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2f))

@@ -42,6 +42,21 @@
                 <data android:path="/news" />
                 <data android:pathPrefix="/news/" />
             </intent-filter>
+            <!-- Google share links (Discover / Google app "Share"): resolved in-app; non-BBC ones go straight on to the browser. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="share.google" />
+                <data android:host="search.app" />
+            </intent-filter>
+            <!-- "Share > BBC Revived" from any app: opens the BBC link in the shared text. -->
+            <intent-filter android:label="Open in BBC Revived">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
         </activity>
         <receiver android:name=".update.InstallReceiver" android:exported="false" />
     </application>

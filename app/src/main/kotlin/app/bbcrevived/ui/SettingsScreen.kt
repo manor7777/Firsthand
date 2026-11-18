@@ -67,13 +67,26 @@ fun SettingsScreen(
                 FilledTonalButton({ if (parseAccent(hex) != null && Regex("#?[0-9A-Fa-f]{6}").matches(hex)) onAccent(if (hex.startsWith("#")) hex.uppercase() else "#" + hex.uppercase()) }) { Text("Apply") }
             }
             Heading("Notifications")
+            // Whatever needs notifications asks for the permission first, then carries on. If Android won't show the
+            // prompt any more (denied before), open this app's notification settings instead.
+            var afterGrant by remember { mutableStateOf<(() -> Unit)?>(null) }
             val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
-                if (ok) alerts.setEnabled(true) else status = "Notifications are blocked for this app. Allow them in system settings."
+                if (ok) afterGrant?.invoke()
+                else {
+                    status = "Notifications are off for BBC Revived. Turn them on here, then try again."
+                    runCatching {
+                        ctx.startActivity(android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, ctx.packageName))
+                    }
+                }
+                afterGrant = null
+            }
+            fun withNotifications(action: () -> Unit) {
+                if (app.bbcrevived.notify.Alerts.canNotify(ctx)) action()
+                else { afterGrant = action; askPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS) }
             }
             ToggleRow("Breaking news alerts", "Checks in the background and notifies you.", alerts.enabled) { on ->
-                if (!on) alerts.setEnabled(false)
-                else if (android.os.Build.VERSION.SDK_INT >= 33 && !app.bbcrevived.notify.Alerts.canNotify(ctx)) askPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                else alerts.setEnabled(true)
+                if (!on) alerts.setEnabled(false) else withNotifications { alerts.setEnabled(true) }
             }
             ToggleRow("Only from topics I follow", "Skip breaking stories outside My News.", alerts.onlyFollows, alerts.setOnlyFollows)
             Text("Alert on", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -87,10 +100,20 @@ fun SettingsScreen(
                     FilterChip(alerts.interval == m, { alerts.setInterval(m) }, { Text(l) })
                 }
             }
-            OutlinedButton({ alerts.sendTest() }) { Text("Send a test alert") }
+            OutlinedButton({ withNotifications { alerts.sendTest() } }) { Text("Send a test alert") }
             Text("Android runs background checks roughly on schedule but may delay them to save battery. BBC doesn't publish a breaking flag, so \"Top story changes\" is the fallback.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Heading("BBC links")
-            Text("Open bbc.com and bbc.co.uk News links from other apps in BBC Revived. Android needs this switched on once: tap below, choose \"Open by default\", turn on \"Open supported links\" and tick the BBC addresses. If the official BBC News app is installed, turn its links off there. Videos and other BBC sites still open in your browser.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Open bbc.com and bbc.co.uk News links from other apps in BBC Revived. Android needs this switched on once: tap below, tap \"Add link\" and tick every address (the BBC ones, plus share.google and search.app for links shared from Google). Android doesn't let unofficial apps switch this on themselves. If the official BBC News app is installed, turn its links off there. You can also share any BBC link to BBC Revived.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            var links by remember { mutableStateOf(ExternalBrowser.linkStatus(ctx)) }
+            androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { links = ExternalBrowser.linkStatus(ctx) }
+            links?.let { l ->
+                val text = when {
+                    l.allOn -> "On: all ${l.total} addresses open here."
+                    !l.allowed -> "Off: \"Open supported links\" is switched off."
+                    else -> "Partly on: ${l.total - l.off.size} of ${l.total}. Still off: ${l.off.joinToString(", ")}"
+                }
+                Text(text, color = if (l.allOn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
+            }
             Button({ ExternalBrowser.openDefaultLinkSettings(ctx) }) { Text("Open link settings") }
             Heading("Updates")
             Text("Installed version ${updates.installedName}", color = MaterialTheme.colorScheme.onSurfaceVariant)

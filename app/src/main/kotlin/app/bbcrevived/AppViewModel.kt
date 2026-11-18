@@ -195,6 +195,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _refreshing.value = false
     }
 
+    /** Video page details by URL; a null value means the page couldn't be read. */
+    private val _videos = MutableStateFlow<Map<String, VideoInfo?>>(emptyMap())
+    val videos = _videos.asStateFlow()
+    fun loadVideo(s: Story) {
+        if (_videos.value.containsKey(s.url)) return
+        viewModelScope.launch { val v = repo.video(s); _videos.update { it + (s.url to v) } }
+    }
+    suspend fun videoStream(versionId: String): String? = repo.videoStream(versionId)
+
+    /** Where a share.google / search.app link really goes. */
+    suspend fun resolveShortLink(url: String): String = repo.resolveShortLink(url)
+
     private val _live = MutableStateFlow<Map<String, List<LivePost>>>(emptyMap())
     val live = _live.asStateFlow()
 

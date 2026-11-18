@@ -122,3 +122,14 @@ data class LivePost(
 
 data class TopicRef(val id: String, val name: String)
 data class ArticleContent(val blocks: List<Block>, val topics: List<TopicRef>)
+
+/** A BBC /news/videos page: the clip's version ID (for BBC's media selector) plus its text. */
+data class VideoInfo(
+    val title: String,
+    val summary: List<Block>,
+    val versionId: String?,
+    val poster: String?,
+    val portrait: Boolean,
+    val durationSec: Int?,
+    val topics: List<TopicRef>,
+)

@@ -91,6 +91,40 @@ class Repository(ctx: Context) {
         )
     }
 
+    /** Clip details for a /news/videos page. */
+    suspend fun video(story: Story): VideoInfo? = runCatching { VideoParser.parse(get(story.url), story.url) }.getOrNull()
+
+    /** A playable HLS stream for a clip, trying the media sets BBC's own web and mobile players use. Null if none (geo/format). */
+    suspend fun videoStream(versionId: String): String? = withContext(Dispatchers.IO) {
+        for (set in listOf("mobile-phone-main", "pc", "iptv-all")) {
+            val url = "https://open.live.bbc.co.uk/mediaselector/6/select/version/2.0/mediaset/$set/vpid/$versionId/format/json"
+            val hls = runCatching {
+                client.newCall(Request.Builder().url(url).header("User-Agent", ua).build()).execute().use { r -> VideoParser.streamFrom(r.body!!.string()) }
+            }.getOrNull()
+            if (hls != null) return@withContext hls
+        }
+        null
+    }
+
+    /**
+     * Follows a share.google / search.app link's HTTP redirects (no browser needed: they are plain 301/302s) and
+     * returns where it ends up. Stops as soon as it reaches a BBC News address, without loading that page.
+     */
+    suspend fun resolveShortLink(url: String): String = withContext(Dispatchers.IO) {
+        val noFollow = client.newBuilder().followRedirects(false).followSslRedirects(false).build()
+        var cur = url
+        repeat(6) {
+            if (DeepLinks.parse(cur) != null) return@withContext cur
+            val next = runCatching {
+                noFollow.newCall(Request.Builder().url(cur).header("User-Agent", ua).build()).execute().use { r ->
+                    if (r.isRedirect) r.header("Location")?.let { loc -> java.net.URI(cur).resolve(loc).toString() } else null
+                }
+            }.getOrNull() ?: return@withContext cur
+            cur = next
+        }
+        cur
+    }
+
     /** Live pages are always fetched fresh (cache only as offline fallback inside get()). */
     suspend fun live(story: Story): List<LivePost> =
         runCatching { LiveParser.parse(get(story.url), story.url) }.getOrDefault(emptyList())

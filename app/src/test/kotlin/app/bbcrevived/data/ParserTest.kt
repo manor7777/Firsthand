@@ -28,6 +28,31 @@ class ParserTest {
         assertTrue(h.breaking.any { it.imageUrl != null })
     }
 
+    @Test fun video() {
+        val v = VideoParser.parse(fx("video.html"), "https://www.bbc.co.uk/news/videos/c3j4r9jgkynzo")!!
+        assertEquals("Watch: What's in the Milburn review?", v.title)
+        assertEquals("p0pndst8", v.versionId)
+        assertTrue(v.portrait)
+        assertEquals(119, v.durationSec)
+        assertTrue(v.summary.filterIsInstance<Block.Paragraph>().first().text.startsWith("A government-backed review"))
+        assertTrue(v.poster!!.startsWith("https://ichef.bbci.co.uk/"))
+    }
+
+    @Test fun pageMetaUsesOpenGraph() {
+        val m = ArticleParser.meta(fx("video.html"))
+        assertEquals("Watch: What's in the Milburn review?", m.title)
+        assertTrue(m.image!!.contains("/branded_news/"))
+    }
+
+    @Test fun mediaSelectorStream() {
+        val json = """{"media":[{"kind":"video","connection":[
+            {"protocol":"http","transferFormat":"dash","href":"http://a/x.mpd"},
+            {"protocol":"http","transferFormat":"hls","href":"http://b/x.m3u8"},
+            {"protocol":"https","transferFormat":"hls","href":"https://c/x.m3u8"}]}]}"""
+        assertEquals("https://c/x.m3u8", VideoParser.streamFrom(json))
+        assertNull(VideoParser.streamFrom("""{"result":"geolocation"}"""))
+    }
+
     @Test fun article() {
         val b = ArticleParser.parse(fx("article.html"), "https://www.bbc.co.uk/news/articles/x")
         val paras = b.filterIsInstance<Block.Paragraph>()

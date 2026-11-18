@@ -22,6 +22,18 @@ object ExternalBrowser {
         runCatching { ctx.startActivity(i) }.onFailure { Toast.makeText(ctx, "Couldn't open the link", Toast.LENGTH_LONG).show() }
     }
 
+    /** Which link addresses the user has switched on for this app (Settings > Open by default), or null if unknown. */
+    fun linkStatus(ctx: Context): LinkStatus? = runCatching {
+        val dvm = ctx.getSystemService(android.content.pm.verify.domain.DomainVerificationManager::class.java) ?: return null
+        val st = dvm.getDomainVerificationUserState(ctx.packageName) ?: return null
+        val off = st.hostToStateMap.filterValues { it == android.content.pm.verify.domain.DomainVerificationUserState.DOMAIN_STATE_NONE }.keys
+        LinkStatus(st.isLinkHandlingAllowed, st.hostToStateMap.size, off.sorted())
+    }.getOrNull()
+
+    data class LinkStatus(val allowed: Boolean, val total: Int, val off: List<String>) {
+        val allOn get() = allowed && off.isEmpty()
+    }
+
     /**
      * Android 12+ only routes unverified web links to an app once the user ticks the domains in
      * Settings > Apps > BBC Revived > Open by default. This jumps straight to that screen.

@@ -14,6 +14,8 @@ import app.bbcrevived.ui.RevivedTheme
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.io.File
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val vm by lazy { androidx.lifecycle.ViewModelProvider(this)[AppViewModel::class.java] }
@@ -24,13 +26,31 @@ class MainActivity : ComponentActivity() {
         Alerts.storyFrom(intent)?.let { vm.pendingOpen.value = it } ?: handleLink(intent, launching = false)
     }
 
-    /** A bbc.com / bbc.co.uk /news link tapped somewhere else. Anything we can't show goes to the browser, never back here. */
+    /**
+     * A link tapped elsewhere (bbc.com / bbc.co.uk /news, or a share.google / search.app link), or text shared to the
+     * app. Google share links are resolved first. Anything we can't show goes to the browser, never back here.
+     */
     private fun handleLink(i: android.content.Intent?, launching: Boolean) {
-        if (i?.action != android.content.Intent.ACTION_VIEW) return
-        when (val link = DeepLinks.parse(i.dataString)) {
-            is DeepLinks.Link.Article, is DeepLinks.Link.Live -> vm.openLink(link)
+        if (i == null) return
+        val raw = when (i.action) {
+            android.content.Intent.ACTION_VIEW -> i.dataString
+            android.content.Intent.ACTION_SEND -> DeepLinks.firstUrl(i.getStringExtra(android.content.Intent.EXTRA_TEXT))
+            else -> return
+        }
+        if (raw == null) {
+            android.widget.Toast.makeText(this, "No link found in what was shared", android.widget.Toast.LENGTH_LONG).show()
+            if (launching) finish(); return
+        }
+        if (DeepLinks.parse(raw) == null && DeepLinks.isShortLink(raw)) {
+            lifecycleScope.launch { route(vm.resolveShortLink(raw), launching) }
+        } else route(raw, launching)
+    }
+
+    private fun route(url: String, launching: Boolean) {
+        when (val link = DeepLinks.parse(url)) {
+            is DeepLinks.Link.Article, is DeepLinks.Link.Live, is DeepLinks.Link.Video -> vm.openLink(link)
             else -> {
-                i.dataString?.let { ExternalBrowser.open(this, it) }
+                ExternalBrowser.open(this, url)
                 if (launching) finish()
             }
         }
