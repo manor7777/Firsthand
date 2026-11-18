@@ -65,7 +65,7 @@ class MainActivity : ComponentActivity() {
             setContentView(ScrollView(this).apply {
                 setPadding(32, 96, 32, 32)
                 addView(TextView(context).apply {
-                    this.text = "BBC Revived crashed last time. Copy this and send it over. Relaunch the app to try again.\n\n$text"
+                    this.text = "Firsthand crashed last time. Copy this and send it over. Relaunch the app to try again.\n\n$text"
                     setTextIsSelectable(true); textSize = 11f
                 })
             })

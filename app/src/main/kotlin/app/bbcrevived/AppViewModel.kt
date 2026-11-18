@@ -191,7 +191,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun installUpdate(r: UpdateChecker.Release) {
         val ctx = getApplication<Application>()
         if (!Installer.canInstall(ctx)) {
-            _update.value = UpdateState.Error("Allow BBC Revived to install apps, then tap Install again.")
+            _update.value = UpdateState.Error("Allow Firsthand to install apps, then tap Install again.")
             Installer.openInstallPermission(ctx); return
         }
         Installer.result.value = null

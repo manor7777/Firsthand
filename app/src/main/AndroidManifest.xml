@@ -15,10 +15,10 @@
         android:name=".RevivedApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="BBC Revived"
+        android:label="Firsthand"
         android:supportsRtl="true"
         android:enableOnBackInvokedCallback="true"
-        android:theme="@style/Theme.BBCRevived">
+        android:theme="@style/Theme.Firsthand">
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"
@@ -53,8 +53,8 @@
                 <data android:host="share.google" />
                 <data android:host="search.app" />
             </intent-filter>
-            <!-- "Share > BBC Revived" from any app: opens the BBC link in the shared text. -->
-            <intent-filter android:label="Open in BBC Revived">
+            <!-- "Share > Firsthand" from any app: opens the BBC link in the shared text. -->
+            <intent-filter android:label="Open in Firsthand">
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />

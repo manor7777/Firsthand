@@ -22,7 +22,7 @@ object Installer {
     fun download(ctx: Context, client: OkHttpClient, r: UpdateChecker.Release, onProgress: (Float) -> Unit): File {
         val dir = File(ctx.cacheDir, "updates").apply { deleteRecursively(); mkdirs() }
         val out = File(dir, r.apkName)
-        val req = Request.Builder().url(r.apkUrl).header("User-Agent", "BBCRevived").build()
+        val req = Request.Builder().url(r.apkUrl).header("User-Agent", "Firsthand").build()
         val md = MessageDigest.getInstance("SHA-256")
         client.newCall(req).execute().use { resp ->
             check(resp.isSuccessful) { "Download failed (HTTP ${resp.code})." }
@@ -81,7 +81,7 @@ class InstallReceiver : BroadcastReceiver() {
                 confirm?.let { runCatching { ctx.startActivity(it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
                 Installer.result.value = "Waiting for you to confirm the install…"
             }
-            PackageInstaller.STATUS_SUCCESS -> Installer.result.value = "Updated. BBC Revived will restart."
+            PackageInstaller.STATUS_SUCCESS -> Installer.result.value = "Updated. Firsthand will restart."
             PackageInstaller.STATUS_FAILURE_CONFLICT, PackageInstaller.STATUS_FAILURE_INCOMPATIBLE ->
                 Installer.result.value = "Android refused the update because it was signed with a different key. Uninstall the app once and install the latest release."
             else -> Installer.result.value = "Install failed (${i.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE) ?: "code $status"})."

@@ -3,7 +3,7 @@ package app.bbcrevived.data
 import java.net.URI
 
 /**
- * Decides which tapped web links BBC Revived takes over: BBC News (bbc.com and bbc.co.uk under /news) plus BBC
+ * Decides which tapped web links Firsthand takes over: BBC News (bbc.com and bbc.co.uk under /news) plus BBC
  * Weather and Sport *articles*, which use the same page format (Google files them under BBC News too),
  * plus Google share links (share.google, search.app) which are resolved first and only kept if they lead to BBC News.
  * Pure Kotlin so it is unit-tested; the manifest filter is looser and this is the real gate.

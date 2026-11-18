@@ -36,7 +36,7 @@ object ExternalBrowser {
 
     /**
      * Android 12+ only routes unverified web links to an app once the user ticks the domains in
-     * Settings > Apps > BBC Revived > Open by default. This jumps straight to that screen.
+     * Settings > Apps > Firsthand > Open by default. This jumps straight to that screen.
      */
     fun openDefaultLinkSettings(ctx: Context) {
         val i = Intent(Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS, Uri.parse("package:${ctx.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

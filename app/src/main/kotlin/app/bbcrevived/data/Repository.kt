@@ -20,7 +20,7 @@ class Repository(ctx: Context) {
 
     private val client = OkHttpClient()
     private val dir = File(ctx.cacheDir, "http").apply { mkdirs() }
-    private val ua = "Mozilla/5.0 (Android) BBCRevived/personal"
+    private val ua = "Mozilla/5.0 (Android) Firsthand/personal"
 
     private suspend fun get(url: String): String = withContext(Dispatchers.IO) {
         val f = File(dir, url.hashCode().toString())

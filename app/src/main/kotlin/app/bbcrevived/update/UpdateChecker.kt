@@ -6,7 +6,7 @@ import okhttp3.Request
 
 /** Reads the repo's latest GitHub Release (public repo, no token) and says whether it is newer than the installed build. */
 object UpdateChecker {
-    const val REPO = "manor7777/BBC-Revived"
+    const val REPO = "manor7777/Firsthand"
 
     data class Release(
         val versionCode: Long, val versionName: String, val notes: String,
@@ -40,7 +40,7 @@ object UpdateChecker {
     /** Blocking network call; run on an IO dispatcher. */
     fun check(client: OkHttpClient, installedCode: Long): Result = try {
         val req = Request.Builder().url("https://api.github.com/repos/$REPO/releases/latest")
-            .header("Accept", "application/vnd.github+json").header("User-Agent", "BBCRevived").build()
+            .header("Accept", "application/vnd.github+json").header("User-Agent", "Firsthand").build()
         client.newCall(req).execute().use { r ->
             when {
                 r.code == 404 -> Result.Failed("No release found. The repository must be public and have at least one release.")

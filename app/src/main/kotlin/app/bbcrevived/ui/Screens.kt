@@ -110,7 +110,7 @@ fun HomeScreen(
         }
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = top + 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("BBC Revived", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("Firsthand", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 IconButton(onSettings) { Icon(Icons.Filled.Settings, "Settings") }
             }
             SlidingPill(hz, 2, mode, Modifier.fillMaxWidth(), height = 46.dp) { i, sel ->

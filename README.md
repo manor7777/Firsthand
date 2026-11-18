@@ -1,4 +1,6 @@
-# BBC Revived
+# Firsthand
+
+*(Formerly BBC Revived. The package ID stays `app.bbcrevived` so existing installs update in place.)*
 
 A private, sideloaded Android news reader in the style of BBC News, built with Kotlin, Jetpack Compose and Material You.
 
@@ -7,15 +9,15 @@ A private, sideloaded Android news reader in the style of BBC News, built with K
 Builds: every push runs GitHub Actions and uploads an APK artifact (`versionName 0.1.<run number>`).
 
 ## Opening BBC links in the app
-bbc.com and bbc.co.uk **News** links (`/news/articles/...`, `/news/live/...`, `/news/videos/...`, old `/news/<slug>-<id>` pages), plus **Weather and Sport articles** (same page format), tapped in other apps open in BBC Revived's native reader; videos play in-app. Google share links (`share.google`, `search.app`) are followed first and only kept if they lead to one of those. Section pages and the rest of bbc.* still open in your browser. You can also Share any BBC link to BBC Revived.
-Android 12+ never auto-routes unverified web links to an app, and BBC's domains can't be verified by us, so switch it on once: **Settings > BBC links > Open link settings** (or system Settings > Apps > BBC Revived > Open by default), turn on *Open supported links* and tick the BBC addresses. If the official BBC News app is installed, turn off its links too.
+bbc.com and bbc.co.uk **News** links (`/news/articles/...`, `/news/live/...`, `/news/videos/...`, old `/news/<slug>-<id>` pages), plus **Weather and Sport articles** (same page format), tapped in other apps open in Firsthand's native reader; videos play in-app. Google share links (`share.google`, `search.app`) are followed first and only kept if they lead to one of those. Section pages and the rest of bbc.* still open in your browser. You can also Share any BBC link to Firsthand.
+Android 12+ never auto-routes unverified web links to an app, and BBC's domains can't be verified by us, so switch it on once: **Settings > BBC links > Open link settings** (or system Settings > Apps > Firsthand > Open by default), turn on *Open supported links* and tick the BBC addresses. If the official BBC News app is installed, turn off its links too.
 
 ## Updates
 **Settings > Updates** checks this repo's latest GitHub Release, downloads the APK, verifies its SHA-256 and installs it over the current app (Android's package installer; it asks once to allow "Install unknown apps"). The repository must be public for this to work (no token is stored).
 
 ### Releasing
 1. Add four repository secrets (Settings > Secrets and variables > Actions): `KEYSTORE_B64` (base64 of the keystore), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. A stable key is required: Android refuses an update signed with a different key than the installed app. Without the secrets builds fall back to the debug key and are published only as pre-releases (never offered by the updater).
-2. Actions > *Build APK* > Run workflow > tick **release**. It builds, tests, signs and publishes release `v0.1.<run number>` with `bbc-revived-0.1.<run number>.apk`; `versionCode` is the run number, so every build is a new patch version.
+2. Actions > *Build APK* > Run workflow > tick **release**. It builds, tests, signs and publishes release `v0.1.<run number>` with `firsthand-0.1.<run number>.apk`; `versionCode` is the run number, so every build is a new patch version.
 Keep the keystore safe and out of the repo: losing it means reinstalling once.
 
 ## Licence and FOSS compliance

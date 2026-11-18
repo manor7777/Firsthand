@@ -12,6 +12,10 @@ on:
 permissions:
   contents: write
 
+env:
+  # Firsthand's run numbers restart at 1, so offset them above the BBC-Revived builds already installed.
+  BUILD_NUMBER: ${{ github.run_number + (github.repository == 'manor7777/Firsthand' && 100 || 0) }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,7 +25,7 @@ jobs:
         with: { distribution: temurin, java-version: 17 }
       - uses: gradle/actions/setup-gradle@v4
       - name: Unit tests
-        run: ./gradlew testDebugUnitTest -PbuildNumber=${{ github.run_number }}
+        run: ./gradlew testDebugUnitTest -PbuildNumber=${{ env.BUILD_NUMBER }}
       - name: Signing key
         env:
           B64: ${{ secrets.KEYSTORE_B64 }}
@@ -41,12 +45,12 @@ jobs:
             echo "::warning::No signing secrets set: this APK is debug-signed and can't update a release build."
           fi
       - name: Assemble release APK
-        run: ./gradlew assembleRelease -PbuildNumber=${{ github.run_number }}
+        run: ./gradlew assembleRelease -PbuildNumber=${{ env.BUILD_NUMBER }}
       - name: Name the APK
-        run: mv app/build/outputs/apk/release/*.apk "app/build/outputs/apk/release/bbc-revived-0.1.${{ github.run_number }}.apk"
+        run: mv app/build/outputs/apk/release/*.apk "app/build/outputs/apk/release/firsthand-0.1.${{ env.BUILD_NUMBER }}.apk"
       - uses: actions/upload-artifact@v4
         with:
-          name: bbc-revived-0.1.${{ github.run_number }}
+          name: firsthand-0.1.${{ env.BUILD_NUMBER }}
           path: app/build/outputs/apk/release/*.apk
       - name: Publish release
         if: github.event_name == 'workflow_dispatch' && inputs.release
@@ -56,6 +60,6 @@ jobs:
           # Unsigned (debug-key) builds are published as pre-releases so the in-app updater (latest release) never offers them.
           flag=""
           [ -z "$KEYSTORE_PATH" ] && flag="--prerelease"
-          gh release create "v0.1.${{ github.run_number }}" app/build/outputs/apk/release/*.apk \
-            --title "BBC Revived 0.1.${{ github.run_number }}" \
+          gh release create "v0.1.${{ env.BUILD_NUMBER }}" app/build/outputs/apk/release/*.apk \
+            --title "Firsthand 0.1.${{ env.BUILD_NUMBER }}" \
             --notes "$(git log -1 --pretty=%B)" --target "$GITHUB_SHA" $flag

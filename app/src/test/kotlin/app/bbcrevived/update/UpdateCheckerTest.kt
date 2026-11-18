@@ -7,7 +7,7 @@ class UpdateCheckerTest {
     private val json = """
         {"tag_name":"v0.1.42","body":"Fixes things.","assets":[
           {"name":"notes.txt","browser_download_url":"https://x/notes.txt","size":3},
-          {"name":"bbc-revived-0.1.42.apk","browser_download_url":"https://github.com/o/r/releases/download/v0.1.42/bbc-revived-0.1.42.apk","size":9000000,
+          {"name":"firsthand-0.1.42.apk","browser_download_url":"https://github.com/o/r/releases/download/v0.1.42/firsthand-0.1.42.apk","size":9000000,
            "digest":"sha256:${"a".repeat(64)}"}]}
     """.trimIndent()
 
@@ -15,7 +15,7 @@ class UpdateCheckerTest {
         val r = UpdateChecker.parse(json)!!
         assertEquals(42L, r.versionCode)
         assertEquals("0.1.42", r.versionName)
-        assertEquals("bbc-revived-0.1.42.apk", r.apkName)
+        assertEquals("firsthand-0.1.42.apk", r.apkName)
         assertEquals("a".repeat(64), r.sha256)
         assertEquals("Fixes things.", r.notes)
     }

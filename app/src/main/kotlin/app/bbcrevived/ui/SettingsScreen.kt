@@ -42,7 +42,7 @@ fun SettingsScreen(
     val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) status = runCatching {
             ctx.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() }
-        }.getOrNull()?.let { if (importJson(it)) "Settings imported." else "That file isn't a BBC Revived settings export." } ?: "Couldn't read that file."
+        }.getOrNull()?.let { if (importJson(it)) "Settings imported." else "That file isn't a Firsthand settings export." } ?: "Couldn't read that file."
     }
     BackHandlerCompat(onBack)
     Surface(Modifier.fillMaxSize()) {
@@ -73,7 +73,7 @@ fun SettingsScreen(
             val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
                 if (ok) afterGrant?.invoke()
                 else {
-                    status = "Notifications are off for BBC Revived. Turn them on here, then try again."
+                    status = "Notifications are off for Firsthand. Turn them on here, then try again."
                     runCatching {
                         ctx.startActivity(android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                             .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, ctx.packageName))
@@ -103,7 +103,7 @@ fun SettingsScreen(
             OutlinedButton({ withNotifications { alerts.sendTest() } }) { Text("Send a test alert") }
             Text("Android runs background checks roughly on schedule but may delay them to save battery. BBC doesn't publish a breaking flag, so \"Top story changes\" is the fallback.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Heading("BBC links")
-            Text("Open bbc.com and bbc.co.uk News links (plus Weather and Sport articles, and Google share links to them) from other apps in BBC Revived. Android needs this switched on once: tap below, tap \"Add link\" and tick every address (the BBC ones, plus share.google and search.app for links shared from Google). Android doesn't let unofficial apps switch this on themselves. If the official BBC News app is installed, turn its links off there. You can also share any BBC link to BBC Revived.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Open bbc.com and bbc.co.uk News links (plus Weather and Sport articles, and Google share links to them) from other apps in Firsthand. Android needs this switched on once: tap below, tap \"Add link\" and tick every address (the BBC ones, plus share.google and search.app for links shared from Google). Android doesn't let unofficial apps switch this on themselves. If the official BBC News app is installed, turn its links off there. You can also share any BBC link to Firsthand.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             var links by remember { mutableStateOf(ExternalBrowser.linkStatus(ctx)) }
             androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { links = ExternalBrowser.linkStatus(ctx) }
             links?.let { l ->
@@ -150,12 +150,12 @@ fun SettingsScreen(
             Heading("Backup")
             Text("Export your followed topics, writers, keywords, blocked writers, theme and accent to a file, or restore them from one.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button({ export.launch("bbc-revived-settings.json") }) { Text("Export") }
+                Button({ export.launch("firsthand-settings.json") }) { Text("Export") }
                 OutlinedButton({ import.launch(arrayOf("application/json", "text/*", "*/*")) }) { Text("Import") }
             }
             status?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
             Heading("About")
-            Text("BBC Revived is an unofficial, private reader. It isn't affiliated with or endorsed by the BBC. Open source under GPL-3.0-or-later; no tracking, ads or analytics.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Firsthand is an unofficial, private reader. It isn't affiliated with or endorsed by the BBC. Open source under GPL-3.0-or-later; no tracking, ads or analytics.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
