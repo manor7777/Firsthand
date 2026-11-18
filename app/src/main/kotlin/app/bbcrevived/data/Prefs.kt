@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -43,6 +44,10 @@ class Prefs(private val ctx: Context) {
     suspend fun setAlertMode(v: String) { ctx.store.edit { it[aMode] = v } }
     suspend fun setAlertInterval(v: Int) { ctx.store.edit { it[aInterval] = v } }
     suspend fun setAlertSeen(v: List<String>) { ctx.store.edit { it[aSeen] = v.joinToString("\n") } }
+
+    private val updChecked = longPreferencesKey("update_checked_at")
+    val updateCheckedAt: Flow<Long> = ctx.store.data.map { it[updChecked] ?: 0L }
+    suspend fun setUpdateCheckedAt(v: Long) { ctx.store.edit { it[updChecked] = v } }
 
     suspend fun set(list: List<String>) { ctx.store.edit { it[key] = list.joinToString("\n") } }
 }

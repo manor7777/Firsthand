@@ -46,6 +46,9 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     val blocks by vm.blocks.collectAsStateWithLifecycle()
     val live by vm.live.collectAsStateWithLifecycle()
     val articleTopics by vm.articleTopics.collectAsStateWithLifecycle()
+    val upState by vm.update.collectAsStateWithLifecycle()
+    val installResult by vm.installResult.collectAsStateWithLifecycle()
+    val updates = UpdateUi(vm.installedName, upState, installResult, vm::checkForUpdate, vm::installUpdate)
     val open: (List<Story>, Int) -> Unit = { l, i -> reader = l to i }
 
     BackHandler(enabled = searching && reader == null) { searching = false; query = "" }
@@ -68,7 +71,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
             reader?.let { (l, i) -> ArticlePager(l, i, blocks, vm::loadArticle, live, vm::loadLive, articleTopics, cats, vm::toggleFollow) { reader = null } }
         }
         AnimatedVisibility(settingsOpen, enter = slideInHorizontally { it }, exit = slideOutHorizontally { it }) {
-            SettingsScreen(accent, mode, vm::setAccent, vm::setThemeMode, vm::exportJson, vm::importJson, alerts) { settingsOpen = false }
+            SettingsScreen(accent, mode, vm::setAccent, vm::setThemeMode, vm::exportJson, vm::importJson, alerts, updates) { settingsOpen = false }
         }
     }
 }

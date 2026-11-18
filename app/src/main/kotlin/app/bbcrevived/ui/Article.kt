@@ -15,7 +15,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.LocalContext
+import app.bbcrevived.platform.ExternalBrowser
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -60,7 +61,7 @@ fun ArticlePager(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ArticlePage(s: Story, blocks: List<Block>?, topics: List<TopicRef>, follows: List<String>, onToggleFollow: (String) -> Unit) {
-    val uri = LocalUriHandler.current
+    val ctx = LocalContext.current
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 48.dp)) {
         item { s.imageUrl?.let { AsyncImage(it, null, Modifier.fillMaxWidth().height(260.dp), contentScale = ContentScale.Crop) } ?: Spacer(Modifier.height(72.dp)) }
         item {
@@ -76,7 +77,7 @@ private fun ArticlePage(s: Story, blocks: List<Block>?, topics: List<TopicRef>, 
                 Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(s.summary, style = MaterialTheme.typography.bodyLarge)
                     Text("Full text isn't available in-app for this story.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    FilledTonalButton({ uri.openUri(s.url) }) { Text("Open original") }
+                    FilledTonalButton({ ExternalBrowser.open(ctx, s.url) }) { Text("Open original") }
                 }
             }
             else -> {

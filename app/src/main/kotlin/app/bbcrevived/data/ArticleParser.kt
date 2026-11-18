@@ -15,6 +15,22 @@ object ArticleParser {
         return convert(blocks, articleUrl)
     }
 
+    /** Headline/summary/lead image from the page's Open Graph tags, for stories opened from a link. */
+    fun meta(html: String): PageMeta {
+        fun unescape(v: String) = v.replace("&amp;", "&").replace("&quot;", "\"").replace("&#x27;", "'").replace("&#39;", "'")
+            .replace("&lt;", "<").replace("&gt;", ">").trim()
+        fun og(name: String): String? {
+            val tag = Regex("<meta\\b[^>]*>", RegexOption.IGNORE_CASE).findAll(html).map { it.value }.firstOrNull {
+                Regex("(property|name)\\s*=\\s*[\"']og:$name[\"']", RegexOption.IGNORE_CASE).containsMatchIn(it)
+            } ?: return null
+            return Regex("content\\s*=\\s*\"([^\"]*)\"|content\\s*=\\s*'([^']*)'", RegexOption.IGNORE_CASE).find(tag)
+                ?.let { it.groupValues[1].ifEmpty { it.groupValues[2] } }?.let(::unescape)?.takeIf { it.isNotEmpty() }
+        }
+        val title = og("title") ?: Regex("<title[^>]*>(.*?)</title>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+            .find(html)?.groupValues?.get(1)?.let(::unescape)
+        return PageMeta(title?.removeSuffix(" - BBC News")?.trim()?.takeIf { it.isNotEmpty() }, og("description"), og("image"))
+    }
+
     /** BBC's "Related topics" for an article (each has a followable topic feed). */
     fun topics(html: String): List<TopicRef> {
         val root = InitialData.extract(html) ?: return emptyList()

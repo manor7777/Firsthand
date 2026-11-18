@@ -6,7 +6,9 @@ import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import app.bbcrevived.data.DeepLinks
 import app.bbcrevived.notify.Alerts
+import app.bbcrevived.platform.ExternalBrowser
 import app.bbcrevived.ui.AppRoot
 import app.bbcrevived.ui.RevivedTheme
 import androidx.compose.runtime.getValue
@@ -19,7 +21,19 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        Alerts.storyFrom(intent)?.let { vm.pendingOpen.value = it }
+        Alerts.storyFrom(intent)?.let { vm.pendingOpen.value = it } ?: handleLink(intent, launching = false)
+    }
+
+    /** A bbc.com / bbc.co.uk /news link tapped somewhere else. Anything we can't show goes to the browser, never back here. */
+    private fun handleLink(i: android.content.Intent?, launching: Boolean) {
+        if (i?.action != android.content.Intent.ACTION_VIEW) return
+        when (val link = DeepLinks.parse(i.dataString)) {
+            is DeepLinks.Link.Article, is DeepLinks.Link.Live -> vm.openLink(link)
+            else -> {
+                i.dataString?.let { ExternalBrowser.open(this, it) }
+                if (launching) finish()
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,7 +52,7 @@ class MainActivity : ComponentActivity() {
             return
         }
         enableEdgeToEdge()
-        if (savedInstanceState == null) Alerts.storyFrom(intent)?.let { vm.pendingOpen.value = it }
+        if (savedInstanceState == null) Alerts.storyFrom(intent)?.let { vm.pendingOpen.value = it } ?: handleLink(intent, launching = true)
         setContent {
             val accent by vm.accent.collectAsStateWithLifecycle()
             val mode by vm.themeMode.collectAsStateWithLifecycle()

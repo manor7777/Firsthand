@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
@@ -80,6 +81,15 @@ class Repository(ctx: Context) {
         val html = get(story.url)
         ArticleContent(ArticleParser.parse(html, story.url), ArticleParser.topics(html))
     }.getOrDefault(ArticleContent(emptyList(), emptyList()))
+
+    /** A story for a tapped BBC link: headline/summary/image from the page, or a bare placeholder if it can't be read in time. */
+    suspend fun storyFromLink(link: DeepLinks.Link): Story {
+        val m = withTimeoutOrNull(6_000) { runCatching { ArticleParser.meta(get(link.url)) }.getOrNull() }
+        return Story(
+            id = link.url, title = m?.title ?: "BBC News", summary = m?.description.orEmpty(), url = link.url,
+            imageUrl = m?.image, category = "News", publishedMillis = 0L, isLive = link is DeepLinks.Link.Live,
+        )
+    }
 
     /** Live pages are always fetched fresh (cache only as offline fallback inside get()). */
     suspend fun live(story: Story): List<LivePost> =

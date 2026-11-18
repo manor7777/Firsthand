@@ -20,11 +20,21 @@ android {
         versionName = "0.1.$buildNumber"
     }
 
+    // Releases are signed with a stable key supplied by CI (KEYSTORE_* env from GitHub secrets) so Android accepts
+    // each build as an update to the last. Without it (local/other builds) fall back to the debug key.
+    val releaseKey = System.getenv("KEYSTORE_PATH")
+    signingConfigs {
+        if (releaseKey != null) create("release") {
+            storeFile = file(releaseKey)
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
+        }
+    }
     buildTypes {
         release {
             isMinifyEnabled = false
-            // Sideload only: signed with the auto-generated debug key.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (releaseKey != null) "release" else "debug")
         }
     }
     compileOptions {

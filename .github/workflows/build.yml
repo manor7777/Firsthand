@@ -3,6 +3,14 @@ on:
   push:
     branches: ["**"]
   workflow_dispatch:
+    inputs:
+      release:
+        description: "Publish a GitHub Release with the APK (what the in-app updater installs)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -14,9 +22,40 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Unit tests
         run: ./gradlew testDebugUnitTest -PbuildNumber=${{ github.run_number }}
+      - name: Signing key
+        env:
+          B64: ${{ secrets.KEYSTORE_B64 }}
+          STORE_PW: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_AL: ${{ secrets.KEY_ALIAS }}
+          KEY_PW: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$B64" ]; then
+            echo "$B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            {
+              echo "KEYSTORE_PATH=$RUNNER_TEMP/release.jks"
+              echo "KEYSTORE_PASSWORD=$STORE_PW"
+              echo "KEY_ALIAS=$KEY_AL"
+              echo "KEY_PASSWORD=${KEY_PW:-$STORE_PW}"
+            } >> "$GITHUB_ENV"
+          else
+            echo "::warning::No signing secrets set: this APK is debug-signed and can't update a release build."
+          fi
       - name: Assemble release APK
         run: ./gradlew assembleRelease -PbuildNumber=${{ github.run_number }}
+      - name: Name the APK
+        run: mv app/build/outputs/apk/release/*.apk "app/build/outputs/apk/release/bbc-revived-0.1.${{ github.run_number }}.apk"
       - uses: actions/upload-artifact@v4
         with:
           name: bbc-revived-0.1.${{ github.run_number }}
           path: app/build/outputs/apk/release/*.apk
+      - name: Publish release
+        if: github.event_name == 'workflow_dispatch' && inputs.release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Unsigned (debug-key) builds are published as pre-releases so the in-app updater (latest release) never offers them.
+          flag=""
+          [ -z "$KEYSTORE_PATH" ] && flag="--prerelease"
+          gh release create "v0.1.${{ github.run_number }}" app/build/outputs/apk/release/*.apk \
+            --title "BBC Revived 0.1.${{ github.run_number }}" \
+            --notes "$(git log -1 --pretty=%B)" --target "$GITHUB_SHA" $flag

@@ -20,13 +20,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.bbcrevived.AppViewModel.UpdateState
+import app.bbcrevived.platform.ExternalBrowser
+import app.bbcrevived.update.UpdateChecker
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
     accent: String, mode: String,
     onAccent: (String) -> Unit, onMode: (String) -> Unit,
-    exportJson: () -> String, importJson: (String) -> Boolean, alerts: AlertState, onBack: () -> Unit,
+    exportJson: () -> String, importJson: (String) -> Boolean, alerts: AlertState, updates: UpdateUi, onBack: () -> Unit,
 ) {
     val ctx = LocalContext.current
     var status by remember { mutableStateOf<String?>(null) }
@@ -86,6 +89,30 @@ fun SettingsScreen(
             }
             OutlinedButton({ alerts.sendTest() }) { Text("Send a test alert") }
             Text("Android runs background checks roughly on schedule but may delay them to save battery. BBC doesn't publish a breaking flag, so \"Top story changes\" is the fallback.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Heading("BBC links")
+            Text("Open bbc.com and bbc.co.uk News links from other apps in BBC Revived. Android needs this switched on once: tap below, choose \"Open by default\", turn on \"Open supported links\" and tick the BBC addresses. If the official BBC News app is installed, turn its links off there. Videos and other BBC sites still open in your browser.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Button({ ExternalBrowser.openDefaultLinkSettings(ctx) }) { Text("Open link settings") }
+            Heading("Updates")
+            Text("Installed version ${updates.installedName}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            when (val u = updates.state) {
+                UpdateState.Idle -> OutlinedButton(updates.check) { Text("Check for updates") }
+                UpdateState.Checking -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp); Text("Checking…")
+                }
+                UpdateState.UpToDate -> { Text("You're up to date.", color = MaterialTheme.colorScheme.primary); OutlinedButton(updates.check) { Text("Check again") } }
+                is UpdateState.Available -> {
+                    Text("Version ${u.release.versionName} is available.", fontWeight = FontWeight.SemiBold)
+                    if (u.release.notes.isNotBlank()) Text(u.release.notes.take(400), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Button({ updates.install(u.release) }) { Text("Download and install") }
+                }
+                is UpdateState.Downloading -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Downloading… ${(u.progress * 100).toInt()}%")
+                    LinearProgressIndicator({ u.progress }, Modifier.fillMaxWidth())
+                }
+                UpdateState.Installing -> Text("Installing…", color = MaterialTheme.colorScheme.primary)
+                is UpdateState.Error -> { Text(u.message, color = MaterialTheme.colorScheme.error); OutlinedButton(updates.check) { Text("Try again") } }
+            }
+            updates.installResult?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
             Heading("Backup")
             Text("Export your followed topics, keywords, theme and accent to a file, or restore them from one.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -119,6 +146,11 @@ private fun Swatch(label: String, color: Color?, selected: Boolean, onClick: () 
 }
 
 @Composable private fun BackHandlerCompat(onBack: () -> Unit) = androidx.activity.compose.BackHandler(onBack = onBack)
+
+class UpdateUi(
+    val installedName: String, val state: UpdateState, val installResult: String?,
+    val check: () -> Unit, val install: (UpdateChecker.Release) -> Unit,
+)
 
 class AlertState(
     val enabled: Boolean, val onlyFollows: Boolean, val mode: String, val interval: Int,

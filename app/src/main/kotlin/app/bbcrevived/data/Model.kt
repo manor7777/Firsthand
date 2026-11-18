@@ -12,6 +12,8 @@ data class Story(
     val breaking: Boolean = false,
 )
 
+data class PageMeta(val title: String?, val description: String?, val image: String?)
+
 data class HomeData(val breaking: List<Story>, val mostRead: List<Story>)
 
 sealed interface Block {

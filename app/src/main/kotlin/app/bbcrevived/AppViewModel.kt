@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.bbcrevived.data.*
 import app.bbcrevived.notify.Alerts
+import app.bbcrevived.update.Installer
+import app.bbcrevived.update.UpdateChecker
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -87,7 +89,60 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** A story to open on screen, set when the app is launched from an alert. */
+    /** Opens a tapped bbc.com / bbc.co.uk news link in the reader (title/image are read from the page first). */
+    fun openLink(link: DeepLinks.Link) { viewModelScope.launch { pendingOpen.value = repo.storyFromLink(link) } }
+
+    // In-app updates (GitHub Releases of this repo).
+    sealed interface UpdateState {
+        data object Idle : UpdateState
+        data object Checking : UpdateState
+        data object UpToDate : UpdateState
+        data class Available(val release: UpdateChecker.Release) : UpdateState
+        data class Downloading(val progress: Float) : UpdateState
+        data object Installing : UpdateState
+        data class Error(val message: String) : UpdateState
+    }
+    private val http = okhttp3.OkHttpClient()
+    private val _update = MutableStateFlow<UpdateState>(UpdateState.Idle)
+    val update = _update.asStateFlow()
+    val installResult = Installer.result.asStateFlow()
+    private val installedCode: Long get() = getApplication<Application>().packageManager.getPackageInfo(getApplication<Application>().packageName, 0).longVersionCode
+    val installedName: String get() = getApplication<Application>().packageManager.getPackageInfo(getApplication<Application>().packageName, 0).versionName.orEmpty()
+
+    fun checkForUpdate() {
+        if (_update.value is UpdateState.Checking || _update.value is UpdateState.Downloading) return
+        _update.value = UpdateState.Checking
+        viewModelScope.launch {
+            val r = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { UpdateChecker.check(http, installedCode) }
+            prefs.setUpdateCheckedAt(System.currentTimeMillis())
+            _update.value = when (r) {
+                is UpdateChecker.Result.Found -> UpdateState.Available(r.release)
+                UpdateChecker.Result.UpToDate -> UpdateState.UpToDate
+                is UpdateChecker.Result.Failed -> UpdateState.Error(r.message)
+            }
+        }
+    }
+
+    fun installUpdate(r: UpdateChecker.Release) {
+        val ctx = getApplication<Application>()
+        if (!Installer.canInstall(ctx)) {
+            _update.value = UpdateState.Error("Allow BBC Revived to install apps, then tap Install again.")
+            Installer.openInstallPermission(ctx); return
+        }
+        Installer.result.value = null
+        _update.value = UpdateState.Downloading(0f)
+        viewModelScope.launch {
+            runCatching {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    val apk = Installer.download(ctx, http, r) { p -> _update.value = UpdateState.Downloading(p) }
+                    Installer.install(ctx, apk)
+                }
+            }.onSuccess { _update.value = UpdateState.Installing }
+                .onFailure { _update.value = UpdateState.Error(it.message ?: "Update failed.") }
+        }
+    }
+
+    /** A story to open on screen, set when the app is launched from an alert or a BBC link. */
     val pendingOpen = MutableStateFlow<Story?>(null)
 
     fun toggleFollow(f: String) { val c = categories.value; setCategories(if (f in c) c - f else c + f) }
@@ -126,6 +181,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         refresh()
+        // Quiet update check at most every 12 hours; the result shows in Settings > Updates.
+        viewModelScope.launch {
+            if (System.currentTimeMillis() - prefs.updateCheckedAt.first() > 12 * 3600_000L) checkForUpdate()
+        }
     }
 
     fun refresh() = viewModelScope.launch {
