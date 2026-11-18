@@ -1,0 +1,12 @@
+1 https://share.google/TC8WuTDC7WIqs44J3 -> 302 https://www.google.com/share.google?q=TC8WuTDC7WIqs44J3
+2 https://www.google.com/share.google?q=TC8WuTDC7WIqs44J3 -> 301 https://www.bbc.com/weather/articles/cmvg2p9qlkz9o?shem=dsdf,sharefoc,agadiscoversdl,,sh/x/discover/m1/4
+3 https://www.bbc.com/weather/articles/cmvg2p9qlkz9o?shem=dsdf,sharefoc,agadiscoversdl,,sh/x/discover/m1/4 -> 200 
+== widgets:
+global-navigation | global-navigation?country=us&language=en-GB&service=commercial
+product-navigation | product-navigation?assetUri=%2Fweather%2Farticles%2Fcmvg2p9qlkz9o&capability=article&country=us&fixedSecondaryNavigation
+article | article?enableOTTAdvertsPlugin=false&env=live&headerLayout=default&host=www.bbc.com&isAdvertisingEnabled=false&isAnimati
+onward-journeys | onward-journeys?columnsByBreakpoint=%7B%22base%22%3A2%2C%22medium%22%3A3%2C%22large%22%3A1%7D&country=us&dataType=conten
+onward-journeys | onward-journeys?columnsByBreakpoint=%7B%22base%22%3A1%2C%22medium%22%3A3%2C%22large%22%3A1%7D&country=us&dataType=conten
+global-footer | global-footer?country=us&language=en-GB&service=commercial
+<script nonce="9vcZMwnHZ9qtGw9sqTQuojKhH1irRxuDbWje9NmedGU09UWezc" crossorigin="anonymous" type="application/json" id="__LOADABLE_REQUIRED_CHUNKS__"
+<script nonce="9vcZMwnHZ9qtGw9sqTQuojKhH1irRxuDbWje9NmedGU09UWezc" crossorigin="anonymous" type="application/json" id="__LOADABLE_REQUIRED_CHUNKS___ext"
