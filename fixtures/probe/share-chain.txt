@@ -1,0 +1,35 @@
+1 https://share.google/EuaV7JI0KoM2JP2RD -> 302 https://www.google.com/share.google?q=EuaV7JI0KoM2JP2RD
+2 https://www.google.com/share.google?q=EuaV7JI0KoM2JP2RD -> 301 https://www.bbc.co.uk/news/videos/c3j4r9jgkynzo?shem=dsdf,sharefoc,agadiscoversdl,,sh/x/discover/m1/4
+3 https://www.bbc.co.uk/news/videos/c3j4r9jgkynzo?shem=dsdf,sharefoc,agadiscoversdl,,sh/x/discover/m1/4 -> 200 
+fixtures/probe/share-hop2.html:https://www.bbc.co.uk/news/videos/c3j4r9jgkynzo?shem=dsdf,sharefoc,agadiscoversdl,,sh/x/discover/m1/4
+fixtures/probe/share-hop3.html:https://www.bbc.co.uk/news/videos/c3j4r9jgkynzo
+fixtures/probe/share-hop3.html:https://www.bbc.co.uk/news/videos/c3j4r9jgkynzo\
+fixtures/probe/share-hop3.html:https://www.bbc.co.uk/news/videos/c6pw4rl00lrjo\
+fixtures/probe/share-hop3.html:https://www.bbc.co.uk/news/videos/ckpdwn23j5j8o\
+fixtures/probe/share-hop3.html:https://www.bbc.co.uk/news/videos/cm93rp3gxn6qo\
+fixtures/probe/share-hop3.html:https://www.bbc.co.uk/news/videos/cmd91xjd9zk2o\
+fixtures/probe/share-hop3.html:https://www.bbc.co.uk/news/videos/cmdx1r99kp9wo\
+fixtures/probe/share-hop3.html:https://www.bbc.co.uk/news/videos/cmgj36192d03o\
+fixtures/probe/share-hop3.html:https://www.bbc.co.uk/news/videos/cqdr1jvylv1xo\
+fixtures/probe/share-hop3.html:https://www.bbc.co.uk/news/videos/cqe9kgegd2y4o\
+fixtures/probe/share-hop3.html:https://www.bbc.co.uk/news/videos/cqlymxe49g30o\
+fixtures/probe/share-hop3.html:https://www.bbc.co.uk/news/videos/cqm2j0xkjvx7o\
+fixtures/probe/share-hop3.html:https://www.bbc.co.uk/news/videos/crkgvnl51w1vo\
+fixtures/probe/share-hop3.html:https://www.bbc.co.uk/news/videos/crpdwve24398o\
+fixtures/probe/share-hop3.html:https://www.bbc.co.uk/news/videos/cwlym2gy3y3eo\
+fixtures/probe/share-hop3.html:https://www.bbc.com/news/videos/c3j4r9jgkynzo
+fixtures/probe/share-hop3.html:https://www.bbc.com/news/videos/c3j4r9jgkynzo\
+fixtures/probe/share-hop3.html:https://www.bbc.com/news/videos/c6pw4rl00lrjo\
+fixtures/probe/share-hop3.html:https://www.bbc.com/news/videos/ckpdwn23j5j8o\
+video: https://www.bbc.co.uk/news/videos/c3j4r9jgkynzo?shem=dsdf,sharefoc,agadiscoversdl,,sh/x/discover/m1/4
+total 1036
+drwxr-xr-x 2 runner runner   4096 Nov 18 19:10 .
+drwxr-xr-x 4 runner runner   4096 Nov 18 19:10 ..
+-rw-r--r-- 1 runner runner    946 Nov 18 19:10 _summary.txt
+-rw-r--r-- 1 runner runner 195281 Nov 18 19:10 search_news.html
+-rw-r--r-- 1 runner runner   2135 Nov 18 19:10 share-chain.txt
+-rw-r--r-- 1 runner runner    252 Nov 18 19:10 share-hop1.html
+-rw-r--r-- 1 runner runner    298 Nov 18 19:10 share-hop2.html
+-rw-r--r-- 1 runner runner 406319 Nov 18 19:10 share-hop3.html
+-rw-r--r-- 1 runner runner  18552 Nov 18 19:10 topic_rss.xml
+-rw-r--r-- 1 runner runner 406319 Nov 18 19:10 video.html
