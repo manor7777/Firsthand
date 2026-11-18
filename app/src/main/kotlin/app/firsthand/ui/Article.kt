@@ -34,6 +34,15 @@ import app.firsthand.data.TopicRef
 import app.firsthand.data.LivePost
 import kotlinx.coroutines.delay
 import app.firsthand.data.Story
+import android.content.Context
+import android.content.Intent
+import android.widget.Toast
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.ui.platform.LocalTextToolbar
+import androidx.compose.ui.platform.LocalView
+import app.firsthand.data.BlockScope
+import app.firsthand.data.Blocking
 import coil.compose.AsyncImage
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
@@ -46,30 +55,86 @@ fun ArticlePager(
     load: (Story) -> Unit, live: Map<String, List<LivePost>>, loadLive: (Story) -> Unit,
     topics: Map<String, List<TopicRef>>, follows: List<String>,
     video: VideoSupport, info: Map<String, ArticleInfo>, onAuthor: (Author) -> Unit, onTopic: (TopicRef) -> Unit,
-    isTop: Boolean, onClose: () -> Unit,
+    isTop: Boolean, onClose: () -> Unit, onBlockKeyword: (String, BlockScope) -> String?,
 ) {
     BackHandler(enabled = isTop, onBack = onClose)
     val hz = remember { HazeState() }
     val pager = rememberPagerState(start) { stories.size }
+    val ctx = LocalContext.current
+    val view = LocalView.current
+    // Selected text can be copied, shared or blocked as a keyword; the menu hands the text here.
+    var blockText by remember { mutableStateOf<String?>(null) }
+    val toolbar = remember(view) { FirsthandTextToolbar(view) { blockText = it } }
+    CompositionLocalProvider(LocalTextToolbar provides toolbar) {
     Surface(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize()) {
             HorizontalPager(pager, Modifier.fillMaxSize().haze(hz), beyondViewportPageCount = 1) { p ->
                 val s = stories[p]
                 LaunchedEffect(s.url) { if (DeepLinks.parse(s.url) is DeepLinks.Link.Video) video.load(s) else load(s) }
-                when {
-                    s.isLive -> LivePage(s, live[s.url], loadLive, pager.currentPage == p)
-                    DeepLinks.parse(s.url) is DeepLinks.Link.Video ->
-                        VideoPage(s, video, pager.currentPage == p && isTop, follows, onTopic)
-                    else -> ArticlePage(s, blocks[s.url], topics[s.url].orEmpty(), follows, info[s.url], onAuthor, onTopic)
+                SelectionContainer {
+                    when {
+                        s.isLive -> LivePage(s, live[s.url], loadLive, pager.currentPage == p)
+                        DeepLinks.parse(s.url) is DeepLinks.Link.Video ->
+                            VideoPage(s, video, pager.currentPage == p && isTop, follows, onTopic)
+                        else -> ArticlePage(s, blocks[s.url], topics[s.url].orEmpty(), follows, info[s.url], onAuthor, onTopic)
+                    }
                 }
             }
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClose, Modifier.glass(hz)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 Spacer(Modifier.weight(1f))
-                Text("${pager.currentPage + 1} / ${stories.size}", Modifier.glass(hz).padding(horizontal = 14.dp, vertical = 8.dp), style = MaterialTheme.typography.labelLarge)
+                Box(Modifier.height(40.dp).glass(hz).padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+                    Text("${pager.currentPage + 1} / ${stories.size}", style = MaterialTheme.typography.labelLarge)
+                }
+                Spacer(Modifier.width(8.dp))
+                Box(Modifier.size(40.dp).glass(hz).tap { shareStory(ctx, stories[pager.currentPage.coerceIn(0, stories.lastIndex)]) }, contentAlignment = Alignment.Center) {
+                    Icon(Icons.Filled.Share, "Share link", Modifier.size(20.dp))
+                }
             }
         }
     }
+    }
+    blockText?.let { raw ->
+        val term = Blocking.clean(raw)
+        var scope by remember(raw) { mutableStateOf(BlockScope.Subject) }
+        var error by remember(raw) { mutableStateOf<String?>(null) }
+        AlertDialog(
+            onDismissRequest = { blockText = null },
+            title = { Text(if (term != null) "Block \u201C$term\u201D?" else "Can't block that") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (term == null) Text("Select a word or short phrase (2 to 60 characters).")
+                    else {
+                        Text("Hide stories about it:")
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            BlockScope.entries.forEach { sc -> FilterChip(scope == sc, { scope = sc }, { Text(sc.label) }) }
+                        }
+                        Text(
+                            if (scope == BlockScope.Subject) "Subject: it's in the headline or topic tags, so the story is about it."
+                            else "Story: it appears anywhere in the headline, summary or tags, even in passing.",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    }
+                }
+            },
+            confirmButton = {
+                if (term != null) TextButton({
+                    val message = onBlockKeyword(term, scope)
+                    if (message == null) { blockText = null; Toast.makeText(ctx, "Blocked \u201C$term\u201D (see Settings > Blocked keywords)", Toast.LENGTH_LONG).show() }
+                    else error = message
+                }) { Text("Block") }
+            },
+            dismissButton = { TextButton({ blockText = null }) { Text("Cancel") } },
+        )
+    }
+}
+
+/** Shares the story's headline and link through Android's share sheet. */
+private fun shareStory(ctx: Context, s: Story) {
+    val send = Intent(Intent.ACTION_SEND).setType("text/plain")
+        .putExtra(Intent.EXTRA_SUBJECT, s.title).putExtra(Intent.EXTRA_TEXT, "${s.title}\n${s.url}")
+    runCatching { ctx.startActivity(Intent.createChooser(send, null)) }
 }
 
 @OptIn(ExperimentalLayoutApi::class)

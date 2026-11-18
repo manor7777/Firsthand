@@ -107,7 +107,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
                             VideoSupport(videos, vm::loadVideo, vm::videoStream), articleInfo,
                             onAuthor = { a -> push { Screen.Writer(it, a.name, a.role, a.source) } },
                             onTopic = { t -> push { Screen.Topic(it, t.id, t.name) } },
-                            isTop = isTop, onClose = ::pop,
+                            isTop = isTop, onClose = ::pop, onBlockKeyword = vm::addBlockedTerm,
                         )
                         is Screen.Writer -> {
                             val key = if (sc.source != null) Categories.xauthorFollow(sc.name) else Categories.authorFollow(sc.name)
