@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.firsthand.data.*
 import app.firsthand.notify.Alerts
+import app.firsthand.platform.SourceLinks
 import app.firsthand.update.Installer
 import app.firsthand.update.UpdateChecker
 import kotlinx.coroutines.flow.*
@@ -231,6 +232,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** The added source a link belongs to (catalogue sources open from other apps; custom feeds from Share > Firsthand), or null. */
+    fun linkSource(url: String): Source? = Sources.matchLink(url, sources.value)
+
+    /** Opens an added source's article in the reader (headline and picture are read from the page first). */
+    fun openSourceLink(src: Source, url: String) { viewModelScope.launch { pendingOpen.value = repo.storyFromSourceLink(url, src.name) } }
+
     /** Opens a tapped bbc.com / bbc.co.uk news link in the reader (title/image are read from the page first). */
     fun openLink(link: DeepLinks.Link) { viewModelScope.launch { pendingOpen.value = repo.storyFromLink(link) } }
 
@@ -314,6 +321,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         Alerts.ensureChannel(app)
+        // Which publishers' links the app is eligible to open follows what is added (and BBC), so Android's "Open by default" lists them.
+        viewModelScope.launch { combine(sources, bbcEnabled) { s, b -> s to b }.collect { (s, b) -> SourceLinks.sync(app, s, b) } }
         viewModelScope.launch { Alerts.schedule(app, prefs.alertEnabled.first(), prefs.alertInterval.first()) }
         // Load feeds for followed topics as the list changes (only what's missing).
         viewModelScope.launch {

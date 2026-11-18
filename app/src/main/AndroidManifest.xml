@@ -29,23 +29,6 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- BBC News links (/news) plus Weather and Sport articles. Not auto-verified: the user enables them under Settings > Open by default. -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" />
-                <data android:scheme="http" />
-                <data android:host="www.bbc.com" />
-                <data android:host="bbc.com" />
-                <data android:host="www.bbc.co.uk" />
-                <data android:host="bbc.co.uk" />
-                <data android:host="m.bbc.co.uk" />
-                <data android:path="/news" />
-                <data android:pathPrefix="/news/" />
-                <data android:pathPrefix="/weather/articles/" />
-                <data android:pathPattern="/sport/.*/articles/.*" />
-            </intent-filter>
             <!-- Google share links (Discover / Google app "Share"): resolved in-app; non-BBC ones go straight on to the browser. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -62,6 +45,648 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+        <!-- link-aliases:start (generated from Sources.catalog by ManifestAliasesTest; see CLAUDE.md to regenerate) -->
+        <!-- BBC News links (/news) plus Weather and Sport articles. Not auto-verified: the user enables them under Settings > Open by default. -->
+        <activity-alias
+            android:name=".link.bbc"
+            android:targetActivity=".MainActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:scheme="http" />
+                <data android:host="www.bbc.com" />
+                <data android:host="bbc.com" />
+                <data android:host="www.bbc.co.uk" />
+                <data android:host="bbc.co.uk" />
+                <data android:host="m.bbc.co.uk" />
+                <data android:path="/news" />
+                <data android:pathPrefix="/news/" />
+                <data android:pathPrefix="/weather/articles/" />
+                <data android:pathPattern="/sport/.*/articles/.*" />
+            </intent-filter>
+        </activity-alias>
+        <!-- One disabled alias per publisher: enabled by the app while that source is added. -->
+        <activity-alias
+            android:name=".link.example_post"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="examplepost.com" />
+                <data android:host="www.examplepost.com" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.derby_telegraph"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="derbytelegraph.co.uk" />
+                <data android:host="www.derbytelegraph.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.leicester_mercury"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="leicestermercury.co.uk" />
+                <data android:host="www.leicestermercury.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.manchester_evening_news"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="manchestereveningnews.co.uk" />
+                <data android:host="www.manchestereveningnews.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.liverpool_echo"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="liverpoolecho.co.uk" />
+                <data android:host="www.liverpoolecho.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.birmingham_live"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="birminghammail.co.uk" />
+                <data android:host="www.birminghammail.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.coventry_live"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="coventrytelegraph.co.uk" />
+                <data android:host="www.coventrytelegraph.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.stoke_sentinel"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="stokesentinel.co.uk" />
+                <data android:host="www.stokesentinel.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.chronicle_live"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="chroniclelive.co.uk" />
+                <data android:host="www.chroniclelive.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.walesonline"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="walesonline.co.uk" />
+                <data android:host="www.walesonline.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.bristol_live"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="bristolpost.co.uk" />
+                <data android:host="www.bristolpost.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.plymouth_live"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="plymouthherald.co.uk" />
+                <data android:host="www.plymouthherald.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.hull_live"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="hulldailymail.co.uk" />
+                <data android:host="www.hulldailymail.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.mylondon"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="mylondon.news" />
+                <data android:host="www.mylondon.news" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.kentlive"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="kentlive.news" />
+                <data android:host="www.kentlive.news" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.essexlive"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="essexlive.news" />
+                <data android:host="www.essexlive.news" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.cornwall_live"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="cornwalllive.com" />
+                <data android:host="www.cornwalllive.com" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.devon_live"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="devonlive.com" />
+                <data android:host="www.devonlive.com" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.edinburgh_live"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="edinburghlive.co.uk" />
+                <data android:host="www.edinburghlive.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.glasgow_live"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="glasgowlive.co.uk" />
+                <data android:host="www.glasgowlive.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.daily_record"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="dailyrecord.co.uk" />
+                <data android:host="www.dailyrecord.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.dublin_live"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="dublinlive.ie" />
+                <data android:host="www.dublinlive.ie" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.mirror"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="mirror.co.uk" />
+                <data android:host="www.mirror.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.daily_star"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="dailystar.co.uk" />
+                <data android:host="www.dailystar.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.the_guardian"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="theguardian.com" />
+                <data android:host="www.theguardian.com" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.sky_news"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="news.sky.com" />
+                <data android:host="skynews.com" />
+                <data android:host="www.skynews.com" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.the_independent"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="independent.co.uk" />
+                <data android:host="www.independent.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.the_telegraph"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="telegraph.co.uk" />
+                <data android:host="www.telegraph.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.evening_standard"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="standard.co.uk" />
+                <data android:host="www.standard.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.metro"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="metro.co.uk" />
+                <data android:host="www.metro.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.the_sun"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="thesun.co.uk" />
+                <data android:host="www.thesun.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.daily_mail"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="dailymail.co.uk" />
+                <data android:host="www.dailymail.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.al_jazeera"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="aljazeera.com" />
+                <data android:host="www.aljazeera.com" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.france_24"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="france24.com" />
+                <data android:host="www.france24.com" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.dw"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="dw.com" />
+                <data android:host="www.dw.com" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.euronews"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="euronews.com" />
+                <data android:host="www.euronews.com" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.npr"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="npr.org" />
+                <data android:host="www.npr.org" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.the_new_york_times"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="nytimes.com" />
+                <data android:host="www.nytimes.com" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.the_conversation_uk"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="theconversation.com" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.ars_technica"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="arstechnica.com" />
+                <data android:host="www.arstechnica.com" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.the_verge"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="theverge.com" />
+                <data android:host="www.theverge.com" />
+            </intent-filter>
+        </activity-alias>
+        <!-- link-aliases:end -->
         <receiver android:name=".update.InstallReceiver" android:exported="false" />
         <receiver android:name=".notify.AlertReceiver" android:exported="false">
             <intent-filter>

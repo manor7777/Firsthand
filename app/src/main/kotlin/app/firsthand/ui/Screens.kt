@@ -110,7 +110,7 @@ fun HomeScreen(
                     if (forYou.isEmpty()) item {
                         Text(
                             if (bbcOn) "Follow topics in My News and they will appear here."
-                            else "BBC News is off. Add publishers in Settings > News sources, then follow their sections in My News. Or switch BBC News back on.",
+                            else "Nothing to show yet. Add sources (BBC News, local papers, national titles) in Settings > News sources, then follow their sections in My News.",
                             Modifier.padding(4.dp), color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }

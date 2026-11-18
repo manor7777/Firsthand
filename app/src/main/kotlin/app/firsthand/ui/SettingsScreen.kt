@@ -72,18 +72,27 @@ fun SettingsScreen(
             }
             Heading("News sources")
             Text("Add publishers that offer RSS feeds: local papers, national titles, world news. Their sections appear in My News under the publisher's name, and their writers can be followed or blocked like BBC ones.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            ToggleRow("BBC News", if (sources.bbcOn) "On: Home headlines, topics, BBC writers, search and alerts." else "Off: nothing from the BBC is shown or loaded. Your BBC topics are kept and come back when you switch it on.", sources.bbcOn, sources.setBbc)
-            if (sources.added.isEmpty()) Text("No other sources added yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (!sources.bbcOn && sources.added.isEmpty()) Text("No sources added. Pick one below.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (sources.bbcOn) SourceRow("BBC News", "Default source · Home headlines, topics, writers, search and alerts", sources.removeBbc)
             sources.added.forEach { src ->
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Column(Modifier.weight(1f)) {
-                        Text(src.name, style = MaterialTheme.typography.bodyLarge)
-                        Text(if (src.custom) "Added by address" else "${src.feeds.size} sections · ${src.group}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    OutlinedButton({ sources.remove(src) }) { Text("Remove") }
-                }
+                SourceRow(src.name, if (src.custom) "Added by address" else "${src.feeds.size} sections · ${src.group}") { sources.remove(src) }
             }
-            SourcePicker(sources.added, sources.add)
+            // After adding a publisher, offer to switch on opening its links here (Android needs the user to do that once).
+            var linkPrompt by remember { mutableStateOf<String?>(null) }
+            SourcePicker(
+                sources.added, sources.bbcOn,
+                onAdd = { sources.add(it); linkPrompt = it.name },
+                onAddBbc = { sources.setBbc(true); linkPrompt = "BBC News" },
+            )
+            linkPrompt?.let { name ->
+                AlertDialog(
+                    onDismissRequest = { linkPrompt = null },
+                    title = { Text("Open $name links here?") },
+                    text = { Text("So an article you tap in Google Discover, a browser or another app opens in Firsthand, Android needs you to switch it on once: tap Open settings, then \"Add link\" and tick the $name addresses. You can skip this and still read $name from My News.") },
+                    confirmButton = { TextButton({ linkPrompt = null; ExternalBrowser.openDefaultLinkSettings(ctx) }) { Text("Open settings") } },
+                    dismissButton = { TextButton({ linkPrompt = null }) { Text("Not now") } },
+                )
+            }
             var feedUrl by remember { mutableStateOf("") }
             var feedName by remember { mutableStateOf("") }
             var feedMsg by remember { mutableStateOf<String?>(null) }
@@ -134,8 +143,8 @@ fun SettingsScreen(
             OutlinedButton({ withNotifications { alerts.sendTest() } }) { Text("Send a test alert") }
             Text("Firsthand has no server, so it checks for news itself on the schedule above. Android may still hold a check back a few minutes while the phone is asleep; setting this app's battery use to Unrestricted makes it the most prompt. BBC doesn't publish a breaking flag, so \"Top story changes\" is the fallback. Alerts cover BBC News only.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             TextButton({ runCatching { ctx.startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", ctx.packageName, null))) } }) { Text("Open app settings (battery)") }
-            Heading("BBC links")
-            Text("Open bbc.com and bbc.co.uk News links (plus Weather and Sport articles, and Google share links to them) from other apps in Firsthand. Android needs this switched on once: tap below, tap \"Add link\" and tick every address (the BBC ones, plus share.google and search.app for links shared from Google). Android doesn't let unofficial apps switch this on themselves. If the official BBC News app is installed, turn its links off there. You can also share any BBC link to Firsthand.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Heading("Opening links")
+            Text("Open article links from BBC News and the publishers you've added (and Google share links to them) in Firsthand when you tap them elsewhere, such as in Google Discover. Android needs this switched on once: tap below, tap \"Add link\" and tick every address (the publishers' ones, plus share.google and search.app for links shared from Google). Android doesn't let unofficial apps switch this on themselves, and it only offers publishers you've added. If the official BBC News app is installed, turn its links off there. Feeds added by address can't be opened this way, but sharing one of their articles to Firsthand works.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             var links by remember { mutableStateOf(ExternalBrowser.linkStatus(ctx)) }
             androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { links = ExternalBrowser.linkStatus(ctx) }
             links?.let { l ->
@@ -219,12 +228,25 @@ class SourcesUi(
     val added: List<Source>, val add: (Source) -> Unit,
     val addCustom: (String, String, (String) -> Unit) -> Unit, val remove: (Source) -> Unit,
     val bbcOn: Boolean, val setBbc: (Boolean) -> Unit,
-)
+) {
+    val removeBbc: () -> Unit get() = { setBbc(false) }
+}
+
+@Composable
+private fun SourceRow(name: String, sub: String, onRemove: () -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.weight(1f)) {
+            Text(name, style = MaterialTheme.typography.bodyLarge)
+            Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        OutlinedButton(onRemove) { Text("Remove") }
+    }
+}
 
 /** Drop-down of catalogue publishers not added yet, grouped (Reach titles, UK national, world, tech). Picking one adds it. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SourcePicker(added: List<Source>, onAdd: (Source) -> Unit) {
+private fun SourcePicker(added: List<Source>, bbcOn: Boolean, onAdd: (Source) -> Unit, onAddBbc: () -> Unit) {
     var open by remember { mutableStateOf(false) }
     val available = remember(added) { Sources.catalog.filter { c -> added.none { it.id == c.id } } }
     ExposedDropdownMenuBox(open, { open = it }) {
@@ -234,7 +256,12 @@ private fun SourcePicker(added: List<Source>, onAdd: (Source) -> Unit) {
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(open) },
         )
         ExposedDropdownMenu(open, { open = false }) {
-            if (available.isEmpty()) Text("Everything in the list is added.", Modifier.padding(16.dp))
+            if (available.isEmpty() && bbcOn) Text("Everything in the list is added.", Modifier.padding(16.dp))
+            // Default sources come first: BBC News is added on a fresh install and shows up here once removed.
+            if (!bbcOn) {
+                Text("DEFAULT SOURCES", Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                DropdownMenuItem({ Text("BBC News") }, { open = false; onAddBbc() })
+            }
             available.groupBy { it.group }.forEach { (group, list) ->
                 Text(group.uppercase(), Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                 list.forEach { s -> DropdownMenuItem({ Text(s.name) }, { open = false; onAdd(s) }) }

@@ -47,8 +47,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun route(url: String, launching: Boolean) {
-        when (val link = DeepLinks.parse(url)) {
-            is DeepLinks.Link.Article, is DeepLinks.Link.Live, is DeepLinks.Link.Video -> vm.openLink(link)
+        val link = DeepLinks.parse(url)?.takeIf { vm.bbcEnabled.value } // BBC removed: its links go to the browser
+        val src = if (link == null) vm.linkSource(url) else null
+        when {
+            link != null && link !is DeepLinks.Link.Unsupported -> vm.openLink(link)
+            src != null -> vm.openSourceLink(src, url)
             else -> {
                 ExternalBrowser.open(this, url)
                 if (launching) finish()

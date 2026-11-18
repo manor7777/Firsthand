@@ -6,11 +6,11 @@ A private, sideloaded Android news reader built on BBC News content, with Kotlin
 
 ## Features
 - **News sources.** BBC News plus any publisher that offers RSS: a built-in list (Example Post and the other Reach titles, Guardian, Sky News, Independent, Mail, Metro, Al Jazeera, NPR, NYT and more) or any feed address you paste in. Add and remove them in **Settings > News sources**; each source's sections appear in My News under its name.
-- **BBC News is optional.** Switch it off in Settings > News sources and nothing from the BBC is shown or loaded (Home becomes a "For you" page built from your sources). Your BBC topics are kept and come back when you switch it on.
+- **BBC News is a default source, not a fixture.** A fresh install starts with BBC News added. Remove it in Settings > News sources like any other source and nothing from the BBC is shown or loaded (Home becomes a "For you" page built from your sources, and BBC links go to your browser). It's first in the *Add a source* list under *Default sources*; re-adding it brings your BBC topics back.
 - Native reader for articles, live pages and videos (BBC: HLS playback in-app), plus BBC Weather and Sport articles. Other publishers' stories are shown as readable text, with a button to open the original if a page can't be read.
 - **Writers.** Credited writers are tappable on BBC and added sources alike: open their page, follow them, or block them (their articles, including co-written ones, are hidden everywhere and from alerts). For added sources, a writer's page lists their stories from the feeds you follow.
 - Follows: topics, sections, writers and keywords appear in *My News* and *For you*.
-- Opens BBC links from other apps and Google share links (see below); *Share > Firsthand* works from any app.
+- **Opens links from your sources.** Tap a Example Post (or any added publisher's) article in Google Discover, a browser or another app and it opens in Firsthand's reader, as BBC links do. Adding a source offers to switch this on (see *Opening links in the app*). *Share > Firsthand* works for BBC and added sources.
 - Live BBC search, and breaking-news alerts for BBC News (see *Alerts*).
 - Settings export/import (`firsthand-settings.json`, includes your sources) and in-app updates from GitHub Releases.
 
@@ -27,9 +27,14 @@ Breaking-news alerts cover BBC News only and are rich: they show the story's pic
 
 Builds: every push runs GitHub Actions and uploads an APK artifact (`versionName 0.1.<build number>`).
 
-## Opening BBC links in the app
-bbc.com and bbc.co.uk **News** links (`/news/articles/...`, `/news/live/...`, `/news/videos/...`, old `/news/<slug>-<id>` pages), plus **Weather and Sport articles** (same page format), tapped in other apps open in Firsthand's native reader; videos play in-app. Google share links (`share.google`, `search.app`) are followed first and only kept if they lead to one of those. Section pages and the rest of bbc.* still open in your browser. You can also Share any BBC link to Firsthand.
-Android 12+ never auto-routes unverified web links to an app, and BBC's domains can't be verified by us, so switch it on once: **Settings > BBC links > Open link settings** (or system Settings > Apps > Firsthand > Open by default), turn on *Open supported links* and tick the BBC addresses. If the official BBC News app is installed, turn off its links too.
+## Opening links in the app
+BBC News links (`/news/articles/...`, `/news/live/...`, `/news/videos/...`, old `/news/<slug>-<id>` pages, plus **Weather and Sport articles**) and article links from every publisher you've added open in Firsthand's native reader; BBC videos play in-app. Google share links (`share.google`, `search.app`) are followed first and kept only if they lead to one of those. Home and section pages, and anything else, still open in your browser. You can also Share any such link to Firsthand.
+
+Android 12+ never auto-routes unverified web links to an app, and Android can't be told about new domains while an app is running, so this works in two steps:
+1. The app declares each catalogue publisher's domains in its manifest as a *disabled* alias, and enables the alias when you add that source (and disables it when you remove it). That is what makes the publisher appear in Android's list. After you add a source the app offers to take you to the right screen.
+2. You switch it on once: **Settings > Opening links > Open link settings** (or system Settings > Apps > Firsthand > Open by default), turn on *Open supported links*, tap *Add link* and tick the addresses. If the official BBC News app is installed, turn off its links too.
+
+Feeds added **by address** can't be picked up automatically (their domain isn't known when the app is built), but sharing one of their articles to Firsthand opens it in the reader.
 
 ## Updates
 **Settings > Updates** checks this repo's latest GitHub Release, downloads the APK, verifies its SHA-256 and installs it over the current app (Android's package installer; it asks once to allow "Install unknown apps"). The repository must be public for this to work (no token is stored).
