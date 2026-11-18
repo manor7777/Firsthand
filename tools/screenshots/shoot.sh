@@ -46,7 +46,12 @@ tap "Settings" && {
   back                                   # leave Settings
 }
 
-tap "My News" && tap "Example Post" && { sleep 10; shot 08-my-news-exampletown 2; }
+tap "My News" && {
+  sleep 3
+  # The section chips are a horizontally scrolling row: swipe it so the newly added source's chip is on screen.
+  if xy=$(find_xy "All"); then y=${xy#* }; adb shell input swipe $((W*85/100)) "$y" $((W*10/100)) "$y" 300; sleep 1; fi
+  tap "Example Post" && { sleep 10; shot 08-my-news-exampletown 2; }
+}
 tap --card && { sleep 10; shot 09-article-source 2; }
 
 demo exit

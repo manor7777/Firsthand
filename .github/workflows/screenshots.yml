@@ -44,7 +44,8 @@ jobs:
           script: bash tools/screenshots/shoot.sh app/build/outputs/apk/debug/app-debug.apk docs/screenshots
       - name: Shrink the images
         run: |
-          mogrify -resize 540x docs/screenshots/*.png
+          pip install --quiet pillow
+          python3 tools/screenshots/shrink.py
           ls -la docs/screenshots
       - name: Keep the raw run (screenshots and any screen dumps) for debugging
         if: always()
