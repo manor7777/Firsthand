@@ -149,7 +149,7 @@ private fun ArticlePage(
     val dup = leadDuplicate(s.imageUrl, blocks)
     val hero = (dup?.value as? Block.Image)?.url ?: s.imageUrl
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 48.dp)) {
-        item { hero?.let { AsyncImage(it, null, Modifier.fillMaxWidth().height(260.dp), contentScale = ContentScale.Crop) } ?: Spacer(Modifier.height(72.dp)) }
+        item { hero?.let { AsyncImage(it, null, Modifier.fillMaxWidth().height(260.dp), contentScale = ContentScale.Crop) } ?: Spacer(Modifier.height(readerTopInset())) }
         item {
             Column(Modifier.padding(20.dp, 18.dp, 20.dp, 4.dp)) {
                 Text(s.title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
@@ -267,21 +267,31 @@ fun InlineEmbed(url: String) {
     )
 }
 
+/**
+ * Space taken by the reader's floating back / counter / share buttons: the status bar (which varies by phone) plus the 48 dp
+ * buttons and their padding. A page with no lead image starts below this, so its title never sits under the buttons.
+ */
+@Composable
+internal fun readerTopInset(): androidx.compose.ui.unit.Dp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 72.dp
+
 /** Native live timeline: pinned posts first, newest next, re-polled every 30s while this page is on screen. */
 @Composable
 private fun LivePage(s: Story, posts: List<LivePost>?, loadLive: (Story) -> Unit, visible: Boolean) {
+    val ctx = LocalContext.current
     LaunchedEffect(s.url, visible) {
         if (!visible) return@LaunchedEffect
         while (true) { loadLive(s); delay(30_000) }
     }
     when {
         posts == null -> Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
-        posts.isEmpty() -> Column(Modifier.fillMaxSize()) {
-            Spacer(Modifier.height(72.dp))
-            Text(s.title, Modifier.padding(20.dp), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            InlineEmbed(s.url) // format not recognised: show the live page itself, inline
+        posts.isEmpty() -> Column(Modifier.fillMaxSize().padding(top = readerTopInset()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Format not recognised or nothing posted yet: keep it native (no website inside the app) and offer the original.
+            Text(s.title, Modifier.padding(horizontal = 20.dp), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            if (s.summary.isNotBlank()) Text(s.summary, Modifier.padding(horizontal = 20.dp), style = MaterialTheme.typography.bodyLarge)
+            Text("Live updates can't be shown in the app right now.", Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            FilledTonalButton({ ExternalBrowser.open(ctx, s.url) }, Modifier.padding(horizontal = 20.dp)) { Text("Open original") }
         }
-        else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 80.dp, bottom = 48.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = readerTopInset(), bottom = 48.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
                 Text(s.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 Text("LIVE · updates every 30 s", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelLarge)

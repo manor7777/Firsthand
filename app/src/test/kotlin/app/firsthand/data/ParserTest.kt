@@ -95,6 +95,15 @@ class ParserTest {
         assertTrue(s.isNotEmpty() && s.all { it.url.startsWith("https://www.bbc.co.uk/") })
     }
 
+    @Test fun liveHasNoWebsiteEmbeds() {
+        // Embeds in a live post would load the whole BBC page inside the post: they must be dropped, text and pictures kept.
+        val kept = listOf(Block.Paragraph("text"), Block.Image("https://e.com/a.jpg", null), Block.Heading("h"))
+        assertEquals(kept, LiveParser.withoutEmbeds(kept + Block.Embed("https://www.bbc.co.uk/news/live/x")))
+        assertTrue(LiveParser.withoutEmbeds(listOf(Block.Embed("u"))).isEmpty())
+        val posts = LiveParser.parse(fx("live.html"), "https://www.bbc.co.uk/news/live/x")
+        assertTrue(posts.flatMap { it.blocks }.none { it is Block.Embed })
+    }
+
     @Test fun live() {
         val p = LiveParser.parse(fx("live.html"), "https://www.bbc.co.uk/news/live/x")
         assertTrue("posts ${p.size}", p.size >= 10)

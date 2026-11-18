@@ -61,7 +61,7 @@ fun VideoPage(s: Story, support: VideoSupport, visible: Boolean, follows: List<S
     }
     val portrait = info?.portrait == true
 
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 72.dp, bottom = 48.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = readerTopInset(), bottom = 48.dp)) {
         item {
             // Exact size from the screen: landscape 16:9 full width; portrait 9:16 capped to 60% of the screen height.
             BoxWithConstraints(Modifier.fillMaxWidth().background(Color.Black).clipToBounds(), contentAlignment = Alignment.Center) {
