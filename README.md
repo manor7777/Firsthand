@@ -6,7 +6,10 @@ A private, sideloaded Android news reader that pulls from the sources you choose
 
 ## Screenshots
 <!-- screenshots:start -->
-_No screenshots yet: run the **Screenshots** workflow (Actions tab) to generate them._
+<table>
+<tr><td align="center"><img src="docs/screenshots/01-home.png" width="190" alt="Home"><br><sub>Home</sub></td><td align="center"><img src="docs/screenshots/02-article.png" width="190" alt="Reader"><br><sub>Reader</sub></td><td align="center"><img src="docs/screenshots/03-my-news.png" width="190" alt="My News"><br><sub>My News</sub></td><td align="center"><img src="docs/screenshots/05-sources.png" width="190" alt="Your sources"><br><sub>Your sources</sub></td></tr>
+<tr><td align="center"><img src="docs/screenshots/06-add-source.png" width="190" alt="Add a source"><br><sub>Add a source</sub></td><td align="center"><img src="docs/screenshots/08-my-news-exampletown.png" width="190" alt="A local paper's stories"><br><sub>A local paper's stories</sub></td><td align="center"><img src="docs/screenshots/09-article-source.png" width="190" alt="Writers and share"><br><sub>Writers and share</sub></td></tr>
+</table>
 <!-- screenshots:end -->
 
 ## Features
