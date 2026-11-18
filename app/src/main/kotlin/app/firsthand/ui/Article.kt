@@ -153,7 +153,7 @@ private fun ArticlePage(
         item {
             Column(Modifier.padding(20.dp, 18.dp, 20.dp, 4.dp)) {
                 Text(s.title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                Text(listOfNotNull(s.source, s.category).filter { it.isNotBlank() }.distinct().joinToString(" · "), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
+                Text(listOf(s.sourceName, s.sectionName).filter { it.isNotBlank() }.joinToString(" · "), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
                 info?.authors?.forEach { a -> BylineRow(a) { onAuthor(a) } }
                 dateLine(info)?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 10.dp)) }
             }

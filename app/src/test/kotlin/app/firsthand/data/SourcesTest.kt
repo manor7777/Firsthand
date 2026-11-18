@@ -28,6 +28,18 @@ class SourcesTest {
         assertTrue(reach.all { it.title == it.title.trim() && !it.isLive })
     }
 
+    @Test fun everyStoryShowsItsSource() {
+        // BBC stories carry no source tag but are shown as "BBC News" with their section.
+        val bbc = Story("u", "t", "", "https://www.bbc.co.uk/news/articles/c1", null, "Business", 0L)
+        assertEquals("BBC News", bbc.sourceName); assertEquals("Business", bbc.sectionName)
+        // A story opened from a link has the placeholder section "News": drop it rather than show "BBC News · News".
+        assertEquals("", Story("u", "t", "", "https://www.bbc.co.uk/news/articles/c2", null, "News", 0L).sectionName)
+        assertEquals("Example Post", reach[0].sourceName); assertEquals("Local News", reach[0].sectionName)
+        // A custom feed's section is empty or the source's own name: nothing to repeat.
+        val custom = Story("u", "t", "", "https://e.com/a", null, "My Blog", 0L, source = "My Blog")
+        assertEquals("", custom.sectionName)
+    }
+
     @Test fun reachPicksTheLargeImageNotThe98pxThumbnail() {
         assertTrue(reach.all { it.imageUrl!!.contains("/s615/") })
     }

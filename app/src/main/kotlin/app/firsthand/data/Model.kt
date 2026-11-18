@@ -18,7 +18,12 @@ data class Story(
     val contentHtml: String? = null,
     /** Topic tags the feed gave the story (Reach: media:keywords; any feed's category elements). Used to tell what a story is about. */
     val tags: List<String> = emptyList(),
-)
+) {
+    /** Who published it, for display: BBC stories carry no source tag (it is the default source). */
+    val sourceName: String get() = source ?: "BBC News"
+    /** The section to show beside the source ("Business"); the bare "News" of a story opened from a link says nothing, so it is dropped. */
+    val sectionName: String get() = category.takeUnless { it.isBlank() || (source == null && it == "News") || it == sourceName }.orEmpty()
+}
 
 data class PageMeta(val title: String?, val description: String?, val image: String?)
 
