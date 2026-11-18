@@ -44,7 +44,6 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     val aFollows by vm.alertOnlyFollows.collectAsStateWithLifecycle()
     val aMode by vm.alertMode.collectAsStateWithLifecycle()
     val aInt by vm.alertInterval.collectAsStateWithLifecycle()
-    val alerts = AlertState(aOn, aFollows, aMode, aInt, vm::setAlertEnabled, vm::setAlertOnlyFollows, vm::setAlertMode, vm::setAlertInterval, vm::sendTestAlert)
 
     val stack = remember { mutableStateListOf<Screen>() }
     var nextId by remember { mutableLongStateOf(0L) }
@@ -72,6 +71,26 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     val blockedTerms by vm.blockedTerms.collectAsStateWithLifecycle()
     val sources by vm.sources.collectAsStateWithLifecycle()
     val bbcOn by vm.bbcEnabled.collectAsStateWithLifecycle()
+    val aBreaking by vm.alertBreaking.collectAsStateWithLifecycle()
+    val aOff by vm.alertOffSources.collectAsStateWithLifecycle()
+    val aCats by vm.alertCategories.collectAsStateWithLifecycle()
+    val aKeywords by vm.alertKeywords.collectAsStateWithLifecycle()
+    val qOn by vm.quietEnabled.collectAsStateWithLifecycle()
+    val qStart by vm.quietStart.collectAsStateWithLifecycle()
+    val qEnd by vm.quietEnd.collectAsStateWithLifecycle()
+    // Alerts can cover BBC News and the added catalogue sources (feeds added by address have no breaking signal worth trusting).
+    val alertSources = buildList { if (bbcOn) add("bbc" to "BBC News"); sources.filter { !it.custom }.forEach { add(it.id to it.name) } }
+    val alerts = AlertState(
+        enabled = aOn, onlyFollows = aFollows, mode = aMode, interval = aInt,
+        setEnabled = vm::setAlertEnabled, setOnlyFollows = vm::setAlertOnlyFollows, setMode = vm::setAlertMode, setInterval = vm::setAlertInterval, sendTest = vm::sendTestAlert,
+        breaking = aBreaking, setBreaking = vm::setAlertBreaking,
+        sources = alertSources, offSources = aOff.toSet(), toggleSource = vm::toggleAlertSource,
+        categories = aCats.toSet(), toggleCategory = vm::toggleAlertCategory,
+        keywords = aKeywords, addKeyword = vm::addAlertKeyword, removeKeyword = vm::removeAlertKeyword,
+        quietEnabled = qOn, quietStart = qStart, quietEnd = qEnd, setQuiet = vm::setQuiet,
+    )
+    // Pills naming each story's source only make sense once there is more than one source to tell apart.
+    val showSource = (if (bbcOn) 1 else 0) + sources.size > 1
     val videos by vm.videos.collectAsStateWithLifecycle()
     val upState by vm.update.collectAsStateWithLifecycle()
     val installResult by vm.installResult.collectAsStateWithLifecycle()
@@ -80,6 +99,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
 
     BackHandler(enabled = searching && stack.isEmpty()) { searching = false; query = "" }
 
+    CompositionLocalProvider(LocalShowSource provides showSource) {
     Box(Modifier.fillMaxSize()) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
             when {
@@ -141,5 +161,6 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
             SettingsScreen(accent, mode, vm::setAccent, vm::setThemeMode, vm::exportJson, vm::importJson, alerts, updates,
                 BlockedUi(blocked, vm::unblockAuthor, blockedTerms, vm::addBlockedTerm, vm::removeBlockedTerm), SourcesUi(sources, vm::addSource, vm::addCustomSource, vm::removeSource, bbcOn, vm::setBbcEnabled)) { settingsOpen = false }
         }
+    }
     }
 }

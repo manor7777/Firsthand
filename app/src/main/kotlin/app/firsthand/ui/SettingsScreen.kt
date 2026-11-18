@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -30,6 +31,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import app.firsthand.data.BlockScope
 import app.firsthand.data.Blocking
+import app.firsthand.data.Categories
 import app.firsthand.data.Source
 import app.firsthand.data.Sources
 
@@ -157,43 +159,7 @@ fun SettingsScreen(
                     }
                         }
                         2 -> {
-                    Heading("Notifications")
-                    // Whatever needs notifications asks for the permission first, then carries on. If Android won't show the
-                    // prompt any more (denied before), open this app's notification settings instead.
-                    var afterGrant by remember { mutableStateOf<(() -> Unit)?>(null) }
-                    val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
-                        if (ok) afterGrant?.invoke()
-                        else {
-                            status = "Notifications are off for Firsthand. Turn them on here, then try again."
-                            runCatching {
-                                ctx.startActivity(android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                                    .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, ctx.packageName))
-                            }
-                        }
-                        afterGrant = null
-                    }
-                    fun withNotifications(action: () -> Unit) {
-                        if (app.firsthand.notify.Alerts.canNotify(ctx)) action()
-                        else { afterGrant = action; askPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS) }
-                    }
-                    ToggleRow("Breaking news alerts", "Checks in the background and notifies you.", alerts.enabled) { on ->
-                        if (!on) alerts.setEnabled(false) else withNotifications { alerts.setEnabled(true) }
-                    }
-                    ToggleRow("Only from topics I follow", "Skip breaking stories outside My News.", alerts.onlyFollows, alerts.setOnlyFollows)
-                    Text("Alert on", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(alerts.mode == "breaking", { alerts.setMode("breaking") }, { Text("Breaking only") })
-                        FilterChip(alerts.mode == "top", { alerts.setMode("top") }, { Text("Top story changes") })
-                    }
-                    Text("Check every", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(15 to "15 min", 30 to "30 min", 60 to "1 h", 180 to "3 h").forEach { (m, l) ->
-                            FilterChip(alerts.interval == m, { alerts.setInterval(m) }, { Text(l) })
-                        }
-                    }
-                    OutlinedButton({ withNotifications { alerts.sendTest() } }) { Text("Send a test alert") }
-                    Text("Firsthand has no server, so it checks for news itself on the schedule above. Android may still hold a check back a few minutes while the phone is asleep; setting this app's battery use to Unrestricted makes it the most prompt. BBC doesn't publish a breaking flag, so \"Top story changes\" is the fallback. Alerts cover BBC News only.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    TextButton({ runCatching { ctx.startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", ctx.packageName, null))) } }) { Text("Open app settings (battery)") }
+                    AlertsTab(alerts) { status = it }
                         }
                         else -> {
                     Heading("Theme")
@@ -346,6 +312,14 @@ class AlertState(
     val enabled: Boolean, val onlyFollows: Boolean, val mode: String, val interval: Int,
     val setEnabled: (Boolean) -> Unit, val setOnlyFollows: (Boolean) -> Unit,
     val setMode: (String) -> Unit, val setInterval: (Int) -> Unit, val sendTest: () -> Unit,
+    val breaking: Boolean, val setBreaking: (Boolean) -> Unit,
+    /** Sources that can send alerts: id to name (BBC News first when added, then the added catalogue sources). */
+    val sources: List<Pair<String, String>>, val offSources: Set<String>, val toggleSource: (String) -> Unit,
+    /** Shared categories (Tech, World, ...) to alert on across every source. */
+    val categories: Set<String>, val toggleCategory: (String) -> Unit,
+    /** Keyword alerts as stored lines ("subject|Bieber"); [addKeyword] returns an error message or null. */
+    val keywords: List<String>, val addKeyword: (String, BlockScope) -> String?, val removeKeyword: (String) -> Unit,
+    val quietEnabled: Boolean, val quietStart: Int, val quietEnd: Int, val setQuiet: (Boolean, Int, Int) -> Unit,
 )
 
 @Composable
@@ -356,5 +330,122 @@ private fun ToggleRow(title: String, sub: String, checked: Boolean, onChange: (B
             Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Switch(checked, onChange)
+    }
+}
+
+/** A titled card, so a tab with many options reads as a few clear groups. */
+@Composable
+private fun SectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+            content()
+        }
+    }
+}
+
+@Composable
+private fun HourRow(label: String, hour: Int, onChange: (Int) -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+        OutlinedButton({ onChange((hour + 23) % 24) }) { Text("\u2212") }
+        Text("%02d:00".format(hour), Modifier.padding(horizontal = 14.dp), style = MaterialTheme.typography.titleMedium)
+        OutlinedButton({ onChange((hour + 1) % 24) }) { Text("+") }
+    }
+}
+
+/**
+ * The Alerts tab. What can alert you, per card: the schedule, breaking news (per source), topics shared across sources,
+ * keywords, and quiet hours. Anything that needs notifications asks for the permission first, then carries on.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun AlertsTab(alerts: AlertState, onStatus: (String) -> Unit) {
+    val ctx = LocalContext.current
+    var afterGrant by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        if (ok) afterGrant?.invoke()
+        else {
+            // Android won't show the prompt again once denied: send the user to this app's notification settings.
+            onStatus("Notifications are off for Firsthand. Turn them on here, then try again.")
+            runCatching {
+                ctx.startActivity(android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, ctx.packageName))
+            }
+        }
+        afterGrant = null
+    }
+    fun withNotifications(action: () -> Unit) {
+        if (app.firsthand.notify.Alerts.canNotify(ctx)) action()
+        else { afterGrant = action; askPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS) }
+    }
+
+    SectionCard("Alerts") {
+        ToggleRow("Notify me about news", "Firsthand checks in the background and notifies you.", alerts.enabled) { on ->
+            if (!on) alerts.setEnabled(false) else withNotifications { alerts.setEnabled(true) }
+        }
+        Text("Check every", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(15 to "15 min", 30 to "30 min", 60 to "1 h", 180 to "3 h").forEach { (m, l) -> FilterChip(alerts.interval == m, { alerts.setInterval(m) }, { Text(l) }) }
+        }
+        OutlinedButton({ withNotifications { alerts.sendTest() } }) { Text("Send a test alert") }
+        Text("Firsthand has no server, so it checks for news itself on the schedule above. Android may still hold a check back a few minutes while the phone is asleep; setting this app's battery use to Unrestricted makes it the most prompt.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        TextButton({ runCatching { ctx.startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", ctx.packageName, null))) } }) { Text("Open app settings (battery)") }
+    }
+
+    SectionCard("Breaking news") {
+        ToggleRow("Breaking news alerts", "BBC News uses its own breaking flag. For other sources, a headline or tag that says BREAKING.", alerts.breaking, alerts.setBreaking)
+        if (alerts.breaking) {
+            Text("Alert on", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(alerts.mode == "breaking", { alerts.setMode("breaking") }, { Text("Breaking only") })
+                FilterChip(alerts.mode == "top", { alerts.setMode("top") }, { Text("Top story changes") })
+            }
+            ToggleRow("Only from topics I follow", "Skip breaking stories outside My News.", alerts.onlyFollows, alerts.setOnlyFollows)
+        }
+    }
+
+    SectionCard("Sources") {
+        Text("Alerts can come from BBC News and any source you've added from the list (not feeds added by address). Switch off the ones you don't want alerts from.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (alerts.sources.isEmpty()) Text("No sources to alert from yet. Add some in the Sources tab.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        alerts.sources.forEach { (id, name) -> ToggleRow(name, "Include in alerts", id !in alerts.offSources) { alerts.toggleSource(id) } }
+    }
+
+    SectionCard("Topics") {
+        Text("Alert me about any new story in these topics, from every source above. Each source's matching section counts (BBC Tech, Sky Technology, and so on).", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Categories.sharedCategories.forEach { c -> FilterChip(c in alerts.categories, { alerts.toggleCategory(c) }, { Text(c) }, Modifier.padding(bottom = 4.dp)) }
+        }
+    }
+
+    SectionCard("Keywords") {
+        Text("Alert me when a story mentions a word or name, in any source. Subject matches the headline or tags; Story also matches the summary.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        var word by remember { mutableStateOf("") }
+        var wordScope by remember { mutableStateOf(BlockScope.Subject) }
+        var wordMsg by remember { mutableStateOf<String?>(null) }
+        OutlinedTextField(word, { word = it.take(60); wordMsg = null }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Keyword or phrase, e.g. Example FC") })
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            BlockScope.entries.forEach { sc -> FilterChip(wordScope == sc, { wordScope = sc }, { Text(sc.label) }) }
+            Spacer(Modifier.weight(1f))
+            Button({ val m = alerts.addKeyword(word, wordScope); if (m == null) word = "" else wordMsg = m }, enabled = word.isNotBlank()) { Text("Add") }
+        }
+        wordMsg?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        Blocking.parseAll(alerts.keywords).forEach { rule ->
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text(rule.term, style = MaterialTheme.typography.bodyLarge)
+                    Text(if (rule.scope == BlockScope.Subject) "Subject: headline or tags" else "Story: headline, summary or tags", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                OutlinedButton({ alerts.removeKeyword(rule.line) }) { Text("Remove") }
+            }
+        }
+    }
+
+    SectionCard("Quiet hours") {
+        ToggleRow("Mute alerts at night", "Stories that arrive during quiet hours are skipped, not saved for later.", alerts.quietEnabled) { alerts.setQuiet(it, alerts.quietStart, alerts.quietEnd) }
+        if (alerts.quietEnabled) {
+            HourRow("From", alerts.quietStart) { alerts.setQuiet(true, it, alerts.quietEnd) }
+            HourRow("Until", alerts.quietEnd) { alerts.setQuiet(true, alerts.quietStart, it) }
+        }
     }
 }

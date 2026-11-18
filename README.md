@@ -24,9 +24,10 @@ A private, sideloaded Android news reader that pulls from the sources you choose
 
   Matching is whole-word and ignores case ("Bieber" won't hide "Bieberstein"). Blocked stories are hidden in every list, search, and from alerts.
 - **Follows.** Topics, sections, writers and keywords appear in *My News* and *For you*.
+- **Categories are merged across sources.** In *My News*, sections that mean the same thing are one group: BBC *Tech*, Sky *Technology* and Guardian *Technology* become a single **Tech** list, newest first (likewise World, Business, which also takes Money and Business Affairs, Football/Soccer, Culture with TV, Film and Celebrity, Science, Health, Crime, and more). Sections with no common category, such as a front page or a local section, stay on their own. Whenever more than one source is in use, every story card carries a pill naming its source.
 - **Opens links from your sources.** Tap one of your sources' articles in Google Discover, a browser or another app and it opens in Firsthand's reader (see *Opening links in the app*). *Share > Firsthand* works too.
-- **Search** across what's loaded (and live search where a source supports it), and **breaking-news alerts** with pictures (see *Alerts*).
-- **Tidy settings.** Settings are grouped into four glass tabs, like Home: *Sources* (your sources and link opening), *Blocking* (writers and keywords), *Alerts*, and *General* (theme, accent colour, updates, backup, about).
+- **Search** across what's loaded (and live search where a source supports it), and customisable **alerts** with pictures (see *Alerts*).
+- **Tidy settings.** Settings are grouped into four glass tabs, like Home: *Sources* (your sources and link opening), *Blocking* (writers and keywords), *Alerts* (all alert options, as cards), and *General* (theme, accent colour, updates, backup, about).
 - **Backup.** Export/import your settings (`firsthand-settings.json`: sources, follows, blocked writers and keywords, theme), and in-app updates from GitHub Releases.
 
 ## How it gets the news
@@ -35,7 +36,15 @@ A private, sideloaded Android news reader that pulls from the sources you choose
 - Everything fetched is cached on the phone so it still opens offline.
 
 ## Alerts
-Breaking-news alerts come from the default source only, and are rich: they show the story's picture (large when expanded, a thumbnail when collapsed). If a story has no picture of its own, the alert uses the page's preview image, or a generic "Breaking news" card drawn by the app, so an alert is never text-only.
+Alerts work across BBC News and every source you've added from the list (feeds added by address are left out, since there's no reliable way to tell what's breaking on them). Everything is set up in **Settings > Alerts**, one card per topic:
+- **Alerts:** the master switch, how often to check, and a test alert.
+- **Breaking news:** BBC News uses its own breaking flag. Other feeds have none, so a story counts as breaking when its headline starts with *BREAKING:*, *Breaking news -*, *Just in*, *Urgent* or *News alert*, or it's tagged that way. Or choose *Top story changes*, which alerts when a source's lead story changes. Optionally only for topics you follow.
+- **Sources:** switch each source on or off for alerts.
+- **Topics:** alert on any new story in a shared category (Tech, World, Business, Sport, Football and so on) from every source at once, using each source's matching section.
+- **Keywords:** alert when a headline or tag (Subject) or the summary as well (Story) mentions a word or name, in any source.
+- **Quiet hours:** mute alerts overnight; stories that arrive meanwhile are skipped, not queued.
+
+Blocked writers and blocked keywords are never alerted. Switching a rule on only learns what is current, so you don't get a burst, and a story is only ever notified once however many rules match it. Alerts show the story's picture (large when expanded, a thumbnail when collapsed); if it has none, the alert uses the page's preview image, or a generic card drawn by the app, so an alert is never text-only.
 
 Without a server to push them, the app checks on a schedule. It arms an Android alarm that is allowed to fire while the phone is idle, then runs an expedited background check; WorkManager's periodic job stays as a backup, and a reboot or app update re-arms the alarm. This does not need battery optimisation turned off, but Android can still hold a check back a few minutes while the phone sleeps: setting the app's battery use to *Unrestricted* is the most prompt, and truly instant delivery would need a push server.
 

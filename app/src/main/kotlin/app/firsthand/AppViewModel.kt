@@ -151,16 +151,49 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setAlertInterval(v: Int) { viewModelScope.launch { prefs.setAlertInterval(v); Alerts.schedule(getApplication(), alertEnabled.value, v) } }
     fun sendTestAlert() = Alerts.test(getApplication())
 
+    // What to alert on: breaking (per source), shared categories across all sources, keywords, quiet hours.
+    val alertBreaking = prefs.alertBreaking.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val alertOffSources = prefs.alertOffSources.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val alertCategories = prefs.alertCategories.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val alertKeywords = prefs.alertKeywords.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val quietEnabled = prefs.quietEnabled.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val quietStart = prefs.quietStart.stateIn(viewModelScope, SharingStarted.Eagerly, 22)
+    val quietEnd = prefs.quietEnd.stateIn(viewModelScope, SharingStarted.Eagerly, 7)
+    fun setAlertBreaking(v: Boolean) { viewModelScope.launch { prefs.setAlertBreaking(v) } }
+    fun toggleAlertSource(id: String) {
+        viewModelScope.launch { prefs.setAlertOffSources(alertOffSources.value.let { if (id in it) it - id else it + id }) }
+    }
+    fun toggleAlertCategory(cat: String) {
+        if (cat !in Categories.sharedCategories) return
+        viewModelScope.launch { prefs.setAlertCategories(alertCategories.value.let { if (cat in it) it - cat else it + cat }) }
+    }
+    /** Adds a keyword alert (same matching as blocked keywords). Returns a message if it can't be added, else null. */
+    fun addAlertKeyword(raw: String, scope: BlockScope): String? {
+        val term = Blocking.clean(raw) ?: return "Enter 2 to 60 characters, with at least one letter or number, and no | symbol."
+        val rule = BlockRule(term, scope)
+        if (rule in Blocking.parseAll(alertKeywords.value)) return "You already have that alert."
+        viewModelScope.launch { prefs.setAlertKeywords(alertKeywords.value + rule.line) }
+        return null
+    }
+    fun removeAlertKeyword(line: String) {
+        val gone = Blocking.parse(line)
+        viewModelScope.launch { prefs.setAlertKeywords(alertKeywords.value.filterNot { Blocking.parse(it) == gone }) }
+    }
+    fun setQuiet(enabled: Boolean, start: Int = quietStart.value, end: Int = quietEnd.value) { viewModelScope.launch { prefs.setQuiet(enabled, start, end) } }
+
     @kotlinx.serialization.Serializable
     private data class SettingsExport(
         val version: Int = 1, val follows: List<String> = emptyList(), val accent: String = "dynamic", val theme: String = "system",
         val alertOnlyFollows: Boolean = false, val alertMode: String = "breaking", val alertInterval: Int = 30,
         val blockedAuthors: List<String> = emptyList(), val sources: List<String> = emptyList(), val bbc: Boolean = true,
         val blockedTerms: List<String> = emptyList(),
+        val alertBreaking: Boolean = true, val alertOffSources: List<String> = emptyList(), val alertCategories: List<String> = emptyList(),
+        val alertKeywords: List<String> = emptyList(), val quietEnabled: Boolean = false, val quietStart: Int = 22, val quietEnd: Int = 7,
     )
 
     fun exportJson(): String = kotlinx.serialization.json.Json { prettyPrint = true }
-        .encodeToString(SettingsExport.serializer(), SettingsExport(1, follows.value, accent.value, themeMode.value, alertOnlyFollows.value, alertMode.value, alertInterval.value, blockedAuthors.value, sourceEntries.value, bbcEnabled.value, blockedTerms.value))
+        .encodeToString(SettingsExport.serializer(), SettingsExport(1, follows.value, accent.value, themeMode.value, alertOnlyFollows.value, alertMode.value, alertInterval.value, blockedAuthors.value, sourceEntries.value, bbcEnabled.value, blockedTerms.value,
+            alertBreaking.value, alertOffSources.value, alertCategories.value, alertKeywords.value, quietEnabled.value, quietStart.value, quietEnd.value))
 
     /** Validates then applies an exported settings file. Returns false if it isn't one. */
     fun importJson(text: String): Boolean = runCatching {
@@ -174,6 +207,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             prefs.setAlertMode(if (e.alertMode in setOf("breaking", "top")) e.alertMode else "breaking")
             prefs.setAlertInterval(e.alertInterval.coerceIn(15, 720))
             prefs.setBbcEnabled(e.bbc)
+            prefs.setAlertBreaking(e.alertBreaking)
+            prefs.setAlertOffSources(e.alertOffSources.filter { it.length in 1..60 && '\n' !in it }.distinct())
+            prefs.setAlertCategories(e.alertCategories.filter { it in Categories.sharedCategories }.distinct())
+            prefs.setAlertKeywords(Blocking.parseAll(e.alertKeywords).map { it.line })
+            prefs.setQuiet(e.quietEnabled, e.quietStart, e.quietEnd)
             prefs.setBlockedTerms(Blocking.parseAll(e.blockedTerms).map { it.line })
             prefs.setSources(e.sources.filter { Sources.resolve(it) != null }.distinct())
             prefs.setBlockedAuthors(e.blockedAuthors.map(String::trim).filter { it.length in 2..80 }.distinctBy { Author.key(it) })

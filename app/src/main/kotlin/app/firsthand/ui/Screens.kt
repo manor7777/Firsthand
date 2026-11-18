@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.firsthand.data.Categories
+import app.firsthand.data.NewsGroups
 import app.firsthand.data.Source
 import app.firsthand.data.Story
 import coil.compose.AsyncImage
@@ -58,6 +59,9 @@ fun StoryCard(s: Story, big: Boolean, rank: Int? = null, onClick: () -> Unit) {
     }
 }
 
+/** True while more than one source is in use (BBC News counts): only then do cards say which source a story is from. */
+val LocalShowSource = compositionLocalOf { false }
+
 @Composable
 private fun Titles(s: Story, style: androidx.compose.ui.text.TextStyle) {
     Text(s.title, style = style, fontWeight = FontWeight.SemiBold, maxLines = 4, overflow = TextOverflow.Ellipsis)
@@ -67,7 +71,7 @@ private fun Titles(s: Story, style: androidx.compose.ui.text.TextStyle) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         if (s.breaking) Pill("BREAKING", MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
         if (s.isLive) Pill("LIVE", MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
-        Pill(s.sourceName, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
+        if (LocalShowSource.current) Pill(s.sourceName, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
         val rest = listOf(s.sectionName, ago(s.publishedMillis)).filter { it.isNotEmpty() }.joinToString(" · ")
         if (rest.isNotEmpty()) Text(
             rest, Modifier.weight(1f, fill = false), style = MaterialTheme.typography.labelMedium,
@@ -266,7 +270,9 @@ fun MyNewsScreen(
         return
     }
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val active = filter?.takeIf { it in selected }
+    // Follows in the same shared category (BBC Tech + Sky Technology) are one group, merged newest first.
+    val groups = remember(selected, topics) { NewsGroups.build(selected, topics) }
+    val active = groups.firstOrNull { it.key == filter }
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.padding(start = 18.dp, end = 8.dp, top = top + 16.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("My News", Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
@@ -275,25 +281,25 @@ fun MyNewsScreen(
         }
         androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             item { FilterChip(active == null, { filter = null }, { Text("All") }) }
-            items(selected) { c -> FilterChip(active == c, { filter = c }, { Text(Categories.label(c)) }) }
+            items(groups, key = { it.key }) { g -> FilterChip(active?.key == g.key, { filter = g.key }, { Text(g.title) }) }
         }
         LazyColumn(
             Modifier.fillMaxSize().haze(hz),
             contentPadding = PaddingValues(14.dp, 8.dp, 14.dp, 130.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            val shown = if (active != null) listOf(active) else selected
-            shown.forEach { c ->
-                val stories = topics[c].orEmpty()
+            val shown = if (active != null) listOf(active) else groups
+            shown.forEach { g ->
+                val stories = g.stories
                 val list = if (active != null) stories else stories.take(4)
-                item(key = "h-$c") {
+                item(key = "h-${g.key}") {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(Categories.label(c).uppercase(), Modifier.weight(1f).padding(start = 4.dp, top = 8.dp), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        if (active == null && stories.size > 4) TextButton({ filter = c }) { Text("See all") }
+                        Text(g.title.uppercase(), Modifier.weight(1f).padding(start = 4.dp, top = 8.dp), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        if (active == null && stories.size > 4) TextButton({ filter = g.key }) { Text("See all") }
                     }
                 }
-                if (list.isEmpty()) item(key = "e-$c") { Text("Nothing loaded yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(4.dp)) }
-                itemsIndexed(list, key = { _, s -> "$c|${s.url}" }) { i, s -> StoryCard(s, big = i == 0 && active != null) { onOpen(list, i) } }
+                if (list.isEmpty()) item(key = "e-${g.key}") { Text("Nothing loaded yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(4.dp)) }
+                itemsIndexed(list, key = { _, s -> "${g.key}|${s.url}" }) { i, s -> StoryCard(s, big = i == 0 && active != null) { onOpen(list, i) } }
             }
         }
     }

@@ -45,6 +45,35 @@ class Prefs(private val ctx: Context) {
     suspend fun setAlertInterval(v: Int) { ctx.store.edit { it[aInterval] = v } }
     suspend fun setAlertSeen(v: List<String>) { ctx.store.edit { it[aSeen] = v.joinToString("\n") } }
 
+    // What to alert on beyond the basics: breaking on/off, which sources, shared categories, keywords, quiet hours.
+    private val aBreaking = booleanPreferencesKey("alert_breaking")
+    private val aOffSources = stringPreferencesKey("alert_off_sources")
+    private val aCategories = stringPreferencesKey("alert_categories")
+    private val aKeywords = stringPreferencesKey("alert_keywords")
+    private val aPrimed = stringPreferencesKey("alert_primed")
+    private val qEnabled = booleanPreferencesKey("quiet_enabled")
+    private val qStart = intPreferencesKey("quiet_start")
+    private val qEnd = intPreferencesKey("quiet_end")
+    private fun lines(v: String?) = v?.split('\n')?.filter(String::isNotBlank) ?: emptyList()
+    val alertBreaking: Flow<Boolean> = ctx.store.data.map { it[aBreaking] ?: true }
+    /** Source ids ("bbc" or a catalogue id) switched off for alerts; everything added is on by default. */
+    val alertOffSources: Flow<List<String>> = ctx.store.data.map { lines(it[aOffSources]) }
+    /** Shared categories (see Categories.sharedCategories) to alert on across every source. */
+    val alertCategories: Flow<List<String>> = ctx.store.data.map { lines(it[aCategories]) }
+    /** Keyword alert rules, stored like blocked keywords ("subject|term"). */
+    val alertKeywords: Flow<List<String>> = ctx.store.data.map { lines(it[aKeywords]) }
+    /** Alert rules that have already been learned once (see AlertPlanner). */
+    val alertPrimed: Flow<List<String>> = ctx.store.data.map { lines(it[aPrimed]) }
+    val quietEnabled: Flow<Boolean> = ctx.store.data.map { it[qEnabled] ?: false }
+    val quietStart: Flow<Int> = ctx.store.data.map { it[qStart] ?: 22 }
+    val quietEnd: Flow<Int> = ctx.store.data.map { it[qEnd] ?: 7 }
+    suspend fun setAlertBreaking(v: Boolean) { ctx.store.edit { it[aBreaking] = v } }
+    suspend fun setAlertOffSources(v: List<String>) { ctx.store.edit { it[aOffSources] = v.joinToString("\n") } }
+    suspend fun setAlertCategories(v: List<String>) { ctx.store.edit { it[aCategories] = v.joinToString("\n") } }
+    suspend fun setAlertKeywords(v: List<String>) { ctx.store.edit { it[aKeywords] = v.joinToString("\n") } }
+    suspend fun setAlertPrimed(v: Collection<String>) { ctx.store.edit { it[aPrimed] = v.joinToString("\n") } }
+    suspend fun setQuiet(enabled: Boolean, start: Int, end: Int) { ctx.store.edit { it[qEnabled] = enabled; it[qStart] = start.coerceIn(0, 23); it[qEnd] = end.coerceIn(0, 23) } }
+
     // Writers whose articles are hidden everywhere (display names, one per line).
     private val blockedKey = stringPreferencesKey("blocked_authors")
     val blockedAuthors: Flow<List<String>> = ctx.store.data.map { it[blockedKey]?.split('\n')?.filter(String::isNotBlank) ?: emptyList() }

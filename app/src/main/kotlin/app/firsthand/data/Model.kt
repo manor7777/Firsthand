@@ -114,6 +114,54 @@ object Categories {
     fun topicName(f: String) = f.substringAfter('|')
     fun topicFollow(id: String, name: String) = "$TOPIC$id|$name"
     fun topicFeed(id: String) = "https://feeds.bbci.co.uk/news/topics/$id/rss.xml"
+    /**
+     * Shared categories: different sources' "Tech" / "Technology" / "Science & Tech" are one, so My News groups them together
+     * and alerts can follow a category across every source. Anything not listed (a local section, a front page) stays its own thing.
+     */
+    val sharedCategories = listOf(
+        "World", "UK", "Politics", "Business", "Tech", "Science", "Environment", "Health", "Education", "Culture",
+        "Sport", "Football", "Crime", "Opinion", "Lifestyle", "Weird",
+    )
+    private val sharedAliases: Map<String, String> = buildMap {
+        fun add(to: String, vararg names: String) = names.forEach { put(it, to) }
+        add("World", "world", "world news", "international", "global", "global news", "uk & world news", "uk and world news", "foreign", "global development")
+        add("UK", "uk", "uk news", "britain", "british news")
+        add("Politics", "politics", "uk politics", "us politics", "government", "westminster", "election", "elections")
+        add("Business", "business", "business news", "business affairs", "economy", "money", "finance", "markets", "companies", "business & finance", "personal finance", "consumer", "work")
+        add("Tech", "tech", "technology", "science & tech", "science and tech", "science and technology", "tech & science", "gadgets", "cyber", "internet", "ai", "gaming", "games")
+        add("Science", "science", "science & environment", "science and environment", "space")
+        add("Environment", "environment", "climate", "climate change", "climate crisis", "green", "nature", "wildlife")
+        add("Health", "health", "health & wellbeing", "wellbeing", "medicine", "nhs", "social care")
+        add("Education", "education", "schools", "universities", "students")
+        add("Culture", "culture", "entertainment", "entertainment & arts", "arts & entertainment", "arts", "showbiz", "tv", "tv & radio", "tv & film", "music", "film", "books", "celebrity", "celebrities", "celeb news", "theatre")
+        add("Sport", "sport", "sports")
+        add("Football", "football", "soccer")
+        add("Crime", "crime", "law & order", "courts", "police", "law and order")
+        add("Opinion", "opinion", "comment", "commentisfree", "columnists", "analysis", "editorial")
+        add("Lifestyle", "lifestyle", "life & style", "life and style", "food", "travel", "fashion", "home & garden", "property", "relationships")
+        add("Weird", "weird", "weird news", "strange news", "odd news", "offbeat", "quirky")
+    }
+
+    /** The shared category a section name belongs to ("Technology" -> "Tech"), or null if it isn't one. */
+    fun sharedName(section: String): String? = sharedAliases[section.trim().lowercase()]
+
+    /** The section name of a follow: a BBC section, a source's section ("Sky News · Technology" -> "Technology"), or a BBC topic. */
+    fun sectionOf(f: String): String? = when {
+        f in feeds -> f
+        isFeed(f) -> feedLabel(f).substringAfter(" · ", "").ifEmpty { null }
+        isTopic(f) -> topicName(f)
+        else -> null
+    }
+
+    /** The shared category a follow belongs to, if any. */
+    fun sharedOf(f: String): String? = sectionOf(f)?.let(::sharedName)
+
+    /** Who publishes a follow's stories, for display: BBC for its sections and topics, else the source name. */
+    fun publisherOf(f: String): String = when {
+        isFeed(f) -> feedLabel(f).substringBefore(" · ")
+        else -> "BBC News"
+    }
+
     /** Followed writers are stored as "author:<Name>" (stories found via BBC search, kept only if their byline matches). */
     const val AUTHOR = "author:"
     fun isAuthor(f: String) = f.startsWith(AUTHOR)

@@ -22,7 +22,13 @@ import androidx.core.content.ContextCompat
 import androidx.work.*
 import app.firsthand.MainActivity
 import app.firsthand.R
+import app.firsthand.data.AlertPlanner
+import app.firsthand.data.Author
 import app.firsthand.data.Blocking
+import app.firsthand.data.Breaking
+import app.firsthand.data.HomeData
+import app.firsthand.data.QuietHours
+import app.firsthand.data.Sources
 import app.firsthand.data.Categories
 import app.firsthand.data.DeepLinks
 import app.firsthand.data.Prefs
@@ -118,8 +124,14 @@ object Alerts {
     /** The story's own picture, or failing that the preview image from its page (BBC's is the branded share image). Null if neither loads. */
     private suspend fun loadPicture(ctx: Context, s: Story): Bitmap? {
         s.imageUrl?.let { u -> download(u)?.let { return it } }
-        val link = DeepLinks.parse(s.url) ?: return null
-        val og = runCatching { Repository(ctx).storyFromLink(link).imageUrl }.getOrNull() ?: return null
+        val link = DeepLinks.parse(s.url)
+        val og = runCatching {
+            when {
+                link != null -> Repository(ctx).storyFromLink(link).imageUrl
+                s.source != null -> Repository(ctx).storyFromSourceLink(s.url, s.source).imageUrl // another publisher's page
+                else -> null
+            }
+        }.getOrNull() ?: return null
         return download(og)
     }
 
@@ -157,6 +169,7 @@ object Alerts {
     private const val X_IMAGE = "story_image"
     private const val X_CAT = "story_category"
     private const val X_LIVE = "story_live"
+    private const val X_SOURCE = "story_source"
 
     /** Launch intent that opens the app straight onto this story. The test alert just opens the app. */
     fun intentFor(ctx: Context, s: Story): Intent = Intent(ctx, MainActivity::class.java).apply {
@@ -164,18 +177,23 @@ object Alerts {
         if (s.id == "test") return@apply
         data = android.net.Uri.parse(s.url)
         putExtra(X_URL, s.url); putExtra(X_TITLE, s.title); putExtra(X_SUMMARY, s.summary)
-        putExtra(X_IMAGE, s.imageUrl); putExtra(X_CAT, s.category); putExtra(X_LIVE, s.isLive)
+        putExtra(X_IMAGE, s.imageUrl); putExtra(X_CAT, s.category); putExtra(X_LIVE, s.isLive); putExtra(X_SOURCE, s.source)
     }
 
-    /** Rebuilds the story from an alert's intent, or null if the intent isn't an alert tap. */
+    /**
+     * Rebuilds the story from an alert's intent, or null if the intent isn't an alert tap. The activity is exported, so the
+     * address is only accepted if it belongs to BBC News or a catalogue publisher (never an arbitrary page).
+     */
     fun storyFrom(i: Intent?): Story? {
         val url = i?.getStringExtra(X_URL) ?: return null
-        if (!url.startsWith("https://www.bbc.co.uk/")) return null
+        val host = runCatching { java.net.URI(url) }.getOrNull()?.takeIf { it.scheme == "https" && it.rawUserInfo == null }?.host?.lowercase() ?: return null
+        val bbc = host in Sources.bbcHosts
+        if (!bbc && Sources.catalog.none { host in it.hosts }) return null
         return Story(url, i.getStringExtra(X_TITLE).orEmpty(), i.getStringExtra(X_SUMMARY).orEmpty(), url,
-            i.getStringExtra(X_IMAGE), i.getStringExtra(X_CAT) ?: "News", 0L, i.getBooleanExtra(X_LIVE, false))
+            i.getStringExtra(X_IMAGE), i.getStringExtra(X_CAT) ?: "News", 0L, i.getBooleanExtra(X_LIVE, false),
+            source = if (bbc) null else i.getStringExtra(X_SOURCE) ?: Sources.catalog.first { host in it.hosts }.name)
     }
 
-    /** The test alert shows the generic picture straight away (no network), so you can see what a picture-less story looks like. */
     fun test(ctx: Context) = post(ctx, Story("test", "This is how a breaking news alert will look", "", "https://www.bbc.co.uk/news", null, "News", 0L, breaking = true), "Breaking news (test)", genericPicture("test"))
 }
 
@@ -204,32 +222,83 @@ object BreakingCheck {
     /** One check at a time, so the alarm, the expedited job and the periodic safety net never alert twice for the same story. */
     private val lock = kotlinx.coroutines.sync.Mutex()
 
+    /**
+     * What an alert can be about, per run, for every included source (BBC News and added catalogue sources, each switchable):
+     *  - breaking stories (BBC's own flag; for the others a "BREAKING:" headline or tag), or the lead story when it changes;
+     *  - new stories in chosen shared categories (Tech, World, ...), taken from every source's matching section;
+     *  - stories whose headline or tags match a keyword.
+     * AlertPlanner turns those into what to notify; quiet hours silence the notifications but still learn the stories.
+     */
     suspend fun run(ctx: Context) = lock.withLock {
         val prefs = Prefs(ctx)
-        if (!prefs.alertEnabled.first() || !prefs.bbcEnabled.first()) return@withLock // alerts cover BBC News only
+        if (!prefs.alertEnabled.first()) return@withLock
         val repo = Repository(ctx)
+        val bbcOn = prefs.bbcEnabled.first()
+        val off = prefs.alertOffSources.first().toSet()
         val mode = prefs.alertMode.first()
-        val home = repo.home()
-        // "breaking": stories flagged breaking. "top": the lead story, for when no flag is exposed.
-        var candidates = if (mode == "top") home.breaking.take(1) else home.breaking.filter { it.breaking }
+        val top = mode == "top"
+        val sources = Sources.resolveAll(prefs.sources.first()).filter { !it.custom && it.id !in off }
+        val useBbc = bbcOn && "bbc" !in off
+        val groups = ArrayList<AlertPlanner.Group>()
+        val scanned = ArrayList<Story>() // everything fetched this run, for keyword matching
 
-        if (prefs.alertOnlyFollows.first() && candidates.isNotEmpty()) {
-            val follows = prefs.categories.first()
+        // Breaking / top story, per source.
+        val breaking = ArrayList<AlertPlanner.Group>()
+        val label = if (top) "Top story" else "Breaking news"
+        var home: HomeData? = null
+        if (useBbc) {
+            home = repo.home()
+            scanned += home.breaking + home.mostRead
+            if (prefs.alertBreaking.first()) breaking += AlertPlanner.Group("break:bbc", label, if (top) home.breaking.take(1) else home.breaking.filter { it.breaking })
+        }
+        for (s in sources) {
+            val front = repo.feed(s.frontPage.url, Categories.feedLabel(s.follow(s.frontPage)))
+            scanned += front
+            if (prefs.alertBreaking.first()) breaking += AlertPlanner.Group("break:${s.id}", "$label · ${s.name}", if (top) front.take(1) else front.filter(Breaking::isBreaking))
+        }
+        // "Only from topics I follow": a breaking story must be in a followed section (or match a followed keyword).
+        if (prefs.alertOnlyFollows.first() && breaking.any { it.stories.isNotEmpty() }) {
+            val follows = prefs.categories.first().let { f -> if (bbcOn) f else f.filterNot(Categories::isBbc) }
             val urls = follows.filter { !Categories.isKeyword(it) }.flatMap { repo.followStories(it) }.map { it.url }.toSet()
             val kws = follows.filter(Categories::isKeyword).map { it.removePrefix(Categories.KW).lowercase() }
-            candidates = candidates.filter { s -> s.url in urls || kws.any { (s.title + " " + s.summary).lowercase().contains(it) } }
+            for (i in breaking.indices) breaking[i] = breaking[i].let { g ->
+                AlertPlanner.Group(g.key, g.title, g.stories.filter { st -> st.url in urls || kws.any { (st.title + " " + st.summary).lowercase().contains(it) } })
+            }
         }
-        // Never alert about stories matching a blocked keyword.
-        val rules = Blocking.parseAll(prefs.blockedTerms.first())
-        if (rules.isNotEmpty()) candidates = candidates.filterNot { s -> rules.any { it.matches(s) } }
-        // Never alert about articles by a blocked writer (or co-written by one).
-        val blocked = prefs.blockedAuthors.first().map({ app.firsthand.data.Author.key(it) }).toSet()
-        if (blocked.isNotEmpty()) candidates = candidates.filterNot { s -> repo.byline(s.url).any { app.firsthand.data.Author.key(it.name) in blocked } }
+        groups += breaking
 
-        val seen = prefs.alertSeen.first()
-        val fresh = candidates.filter { it.url !in seen }
-        // First ever run only records what's current, so enabling alerts doesn't fire a burst.
-        if (seen.isNotEmpty()) for (story in fresh.take(3)) Alerts.notify(ctx, story, if (story.breaking) "Breaking news" else "Top story")
-        prefs.setAlertSeen((seen + candidates.map { it.url }.filter { it !in seen }).takeLast(200).ifEmpty { listOf("-") })
+        // Shared categories, across every included source.
+        for (cat in prefs.alertCategories.first().filter { it in Categories.sharedCategories }) {
+            if (useBbc) for (t in Categories.catalog.filter { Categories.sharedName(it.name) == cat }) {
+                val list = repo.category(t.name); scanned += list
+                groups += AlertPlanner.Group("cat:$cat:bbc:${t.name}", cat, list)
+            }
+            for (s in sources) for (f in s.feeds.filter { Categories.sharedName(it.name) == cat }) {
+                val list = repo.feed(f.url, Categories.feedLabel(s.follow(f))); scanned += list
+                groups += AlertPlanner.Group("cat:$cat:${s.id}:${f.name}", cat, list)
+            }
+        }
+
+        // Keywords: same matching as blocked keywords (Subject = headline or tags, Story = also the summary).
+        val pool = scanned.distinctBy { it.url }
+        for (rule in Blocking.parseAll(prefs.alertKeywords.first())) groups += AlertPlanner.Group("kw:${rule.line.lowercase()}", "\u201C${rule.term}\u201D", pool.filter(rule::matches))
+
+        // Never alert about blocked keywords or blocked writers.
+        val blockedRules = Blocking.parseAll(prefs.blockedTerms.first())
+        val blockedWriters = prefs.blockedAuthors.first().map { Author.key(it) }.toSet()
+        val muted = { st: Story -> blockedRules.any { it.matches(st) } || st.authors.any { Author.key(it.name) in blockedWriters } }
+        val plan = AlertPlanner.plan(groups, prefs.alertSeen.first(), prefs.alertPrimed.first().toSet(), muted)
+        prefs.setAlertSeen(plan.seen)
+        prefs.setAlertPrimed(plan.primed)
+
+        val quiet = prefs.quietEnabled.first() &&
+            QuietHours.contains(java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY), prefs.quietStart.first(), prefs.quietEnd.first())
+        if (quiet) return@withLock
+        for ((story, title) in plan.notify) {
+            // BBC bylines aren't in its feeds: check the article's byline for a blocked writer before alerting.
+            if (story.source == null && blockedWriters.isNotEmpty() && repo.byline(story.url).any { Author.key(it.name) in blockedWriters }) continue
+            // Breaking/top alerts already say who; category and keyword alerts get "Tech · Sky News".
+            Alerts.notify(ctx, story, if (title.startsWith(label)) title else "$title · ${story.sourceName}")
+        }
     }
 }
