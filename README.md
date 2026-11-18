@@ -26,6 +26,7 @@ A private, sideloaded Android news reader that pulls from the sources you choose
 - **Follows.** Topics, sections, writers and keywords appear in *My News* and *For you*.
 - **Opens links from your sources.** Tap one of your sources' articles in Google Discover, a browser or another app and it opens in Firsthand's reader (see *Opening links in the app*). *Share > Firsthand* works too.
 - **Search** across what's loaded (and live search where a source supports it), and **breaking-news alerts** with pictures (see *Alerts*).
+- **Tidy settings.** Settings are grouped into four glass tabs, like Home: *Sources* (your sources and link opening), *Blocking* (writers and keywords), *Alerts*, and *General* (theme, accent colour, updates, backup, about).
 - **Backup.** Export/import your settings (`firsthand-settings.json`: sources, follows, blocked writers and keywords, theme), and in-app updates from GitHub Releases.
 
 ## How it gets the news
