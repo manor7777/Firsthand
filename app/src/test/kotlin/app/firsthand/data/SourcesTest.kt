@@ -127,15 +127,15 @@ class SourcesTest {
         assertNull(Sources.resolve("c:https://exa mple.com/f|X")); assertNull(Sources.resolve("c:https://example.com/f|"))
         assertFalse(Categories.isValid("feed:javascript:alert(1)|X")); assertFalse(Categories.isValid("feed:https://a.com/f|"))
         assertTrue(c.owns(c.follow(c.frontPage)))
-        assertTrue(Categories.isXAuthor(Categories.xauthorFollow("Ann  Lee")) && Categories.xauthorName(Categories.xauthorFollow("Ann  Lee")) == "Sam Taylor")
+        assertTrue(Categories.isXAuthor(Categories.xauthorFollow("Ann  Lee")) && Categories.xauthorName(Categories.xauthorFollow("Ann  Lee")) == "Ann Lee")
     }
 
     @Test fun articleTextSkipsNavigationAndPromos() {
         val para = "This is a genuine paragraph of the story with enough words to count as article prose for the reader. "
         val html = """<html><head><script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle",
-              "author":[{"@type":"Person","name":"Sam Taylor"}],"datePublished":"2026-11-18T20:08:48+00:00","dateModified":"2026-11-18T21:00:00Z"}</script></head>
+              "author":[{"@type":"Person","name":"Ann Lee"}],"datePublished":"2026-11-18T20:08:48+00:00","dateModified":"2026-11-18T21:00:00Z"}</script></head>
             <body><header><nav><p>Home News Sport Weather and other long navigation words here</p></nav></header>
-            <article><h1>Headline</h1><div class="byline">By Sam Taylor</div>
+            <article><h1>Headline</h1><div class="byline">By Ann Lee</div>
             <p>Paragraph 1. ${para.repeat(2)}</p><aside><p>${para}</p></aside>
             <p>Paragraph 2. ${para.repeat(2)}</p><div class="related-articles"><p>READ MORE: some other story that is promoted here for you</p></div>
             <h2>A subheading</h2><figure><img src="/img/a.jpg" width="600"><figcaption>Cap here</figcaption></figure>
@@ -147,7 +147,7 @@ class SourcesTest {
         assertTrue(r.blocks.any { it is Block.Image && it.url == "https://example.com/img/a.jpg" && it.caption == "Cap here" })
         assertTrue(r.blocks.any { it is Block.Quote })
         assertTrue(r.blocks.none { it is Block.Paragraph && ("READ MORE" in it.text || "newsletter" in it.text || "navigation" in it.text) })
-        assertEquals("Sam Taylor", r.authors.single().name); assertEquals("Example", r.authors.single().source)
+        assertEquals("Ann Lee", r.authors.single().name); assertEquals("Example", r.authors.single().source)
         assertEquals("2026-11-18T20:08:48Z", r.published); assertEquals("2026-11-18T21:00:00Z", r.updated)
     }
 
