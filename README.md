@@ -1,38 +1,40 @@
 # Firsthand
 
-A private, sideloaded Android news reader built on BBC News content, with Kotlin, Jetpack Compose and Material You.
+A private, sideloaded Android news reader that pulls from the sources you choose, built with Kotlin, Jetpack Compose and Material You. There is no account and no server: the app fetches everything itself, straight from the publishers.
 
-> **Formerly BBC Revived.** The project moved from `manor7777/BBC-Revived` to `manor7777/Firsthand`, and the Android package ID changed from `app.bbcrevived` to `app.firsthand`. Android treats a new package ID as a different app, so it installs next to the old one rather than updating it: export your settings from the old app (Settings > Backup), install Firsthand, import them, then uninstall the old one. From here on, updates come from this repo. Version numbers continue from the old repo (see *Releasing*).
+**Unofficial.** Firsthand is not affiliated with, endorsed by or sponsored by any publisher. It uses its own icon, ships no publisher logos, and is never published. Content is fetched from the public feeds and pages of the sources you add, for personal use only.
 
 ## Features
-- **News sources.** BBC News plus any publisher that offers RSS: a built-in list (Example Post and the other Reach titles, Guardian, Sky News, Independent, Mail, Metro, Al Jazeera, NPR, NYT and more) or any feed address you paste in. Add and remove them in **Settings > News sources**; each source's sections appear in My News under its name.
-- **BBC News is a default source, not a fixture.** A fresh install starts with BBC News added. Remove it in Settings > News sources like any other source and nothing from the BBC is shown or loaded (Home becomes a "For you" page built from your sources, and BBC links go to your browser). It's first in the *Add a source* list under *Default sources*; re-adding it brings your BBC topics back.
-- Native reader for articles, live pages and videos (BBC: HLS playback in-app), plus BBC Weather and Sport articles. Other publishers' stories are shown as readable text, with a button to open the original if a page can't be read.
-- **Writers.** Credited writers are tappable on BBC and added sources alike: open their page, follow them, or block them (their articles, including co-written ones, are hidden everywhere and from alerts). For added sources, a writer's page lists their stories from the feeds you follow.
-- Follows: topics, sections, writers and keywords appear in *My News* and *For you*.
-- **Opens links from your sources.** Tap a Example Post (or any added publisher's) article in Google Discover, a browser or another app and it opens in Firsthand's reader, as BBC links do. Adding a source offers to switch this on (see *Opening links in the app*). *Share > Firsthand* works for BBC and added sources.
-- Live BBC search, and breaking-news alerts for BBC News (see *Alerts*).
-- Settings export/import (`firsthand-settings.json`, includes your sources) and in-app updates from GitHub Releases.
+- **News sources.** Pick your own: a built-in list (regional and national UK papers such as the Reach titles, Guardian, Sky News, Independent, Mail and Metro, plus world and tech sources) or any RSS/Atom feed address you paste in. Add and remove them in **Settings > News sources**; each source's sections appear in *My News* under its name.
+- **BBC News is the default source.** A fresh install starts with it added. Remove it like any other source and nothing from it is shown or loaded (Home becomes a "For you" page built from your other sources, and its links go to your browser). It sits first in the *Add a source* list under *Default sources*; adding it back restores your topics.
+- **Reader.** A native reader for articles, with live pages and in-app video where a source provides them. Pages that can't be read as text fall back to the story's summary and an *Open original* button.
+- **Writers.** Credited writers are tappable: open their page, follow them, or block them (their articles, including co-written ones, are hidden everywhere and from alerts). For most sources a writer's page lists their stories from the feeds you follow.
+- **Blocked keywords.** Hide stories about something you don't want to see, in **Settings > Blocked keywords**, with a scope per keyword:
+  - *Subject* matches the headline or the story's topic tags, i.e. what the story is about. Blocking "Justin Bieber" hides a story about him, but not one that only mentions him in passing in its summary.
+  - *Story* matches anywhere in the headline, summary or tags, even in passing.
+
+  Matching is whole-word and ignores case ("Bieber" won't hide "Bieberstein"). Blocked stories are hidden in every list, search, and from alerts.
+- **Follows.** Topics, sections, writers and keywords appear in *My News* and *For you*.
+- **Opens links from your sources.** Tap one of your sources' articles in Google Discover, a browser or another app and it opens in Firsthand's reader (see *Opening links in the app*). *Share > Firsthand* works too.
+- **Search** across what's loaded (and live search where a source supports it), and **breaking-news alerts** with pictures (see *Alerts*).
+- **Backup.** Export/import your settings (`firsthand-settings.json`: sources, follows, blocked writers and keywords, theme), and in-app updates from GitHub Releases.
 
 ## How it gets the news
-There is no Firsthand server and no account: the app fetches everything itself, straight from the publishers.
-- **RSS is the backbone.** Every added source is just an RSS (or Atom) feed. Each story's headline, summary, picture, time and credited writers come from the feed. Reach titles (Example Post etc.) serve any section as a feed by adding `?service=rss` to the section's address, which is how their sections are listed. Where a feed includes the full article text it is used directly; otherwise the story's page is fetched when you open it and the article text is read from it (no per-site rules, so odd layouts may fall back to the summary and an *Open original* button).
-- **BBC News** uses its public RSS feeds for sections and topics, plus the data embedded in bbc.co.uk pages for the Breaking / Most read lists, articles, live pages and videos, and BBC search for keywords and writer pages. BBC has no writer pages or breaking-news feed, so writer pages are built from search results that really credit the writer.
+- **RSS is the backbone.** Every added source is an RSS (or Atom) feed. Each story's headline, summary, picture, time, topic tags and credited writers come from the feed. The Reach titles serve any section as a feed by adding `?service=rss` to the section's address, which is how their sections are listed. Where a feed includes the full article text it is used directly; otherwise the story's page is fetched when you open it and the article text is read from it. There are no per-site rules, so unusual layouts may fall back to the summary.
+- **The default source** (BBC News) uses its public RSS feeds for sections and topics, plus the data embedded in its web pages for the headline lists, articles, live pages and videos, and its search for keywords and writer pages.
 - Everything fetched is cached on the phone so it still opens offline.
 
 ## Alerts
-Breaking-news alerts cover BBC News only and are rich: they show the story's picture (large when expanded, a thumbnail when collapsed). If a story has no picture of its own, the alert uses the page's preview image, or a generic "Breaking news" card drawn by the app, so an alert is never text-only. Without a server to push them, the app checks on a schedule. It arms an Android alarm that is allowed to fire while the phone is idle, then runs an expedited background check; WorkManager's periodic job stays as a backup, and a reboot or app update re-arms the alarm. This does not need battery optimisation turned off, but Android can still hold a check back a few minutes while the phone sleeps: setting the app's battery use to *Unrestricted* is the most prompt, and truly instant delivery would need a push server.
+Breaking-news alerts come from the default source only, and are rich: they show the story's picture (large when expanded, a thumbnail when collapsed). If a story has no picture of its own, the alert uses the page's preview image, or a generic "Breaking news" card drawn by the app, so an alert is never text-only.
 
-**Unofficial.** This project is not affiliated with, endorsed by or sponsored by the BBC. It uses its own icon, ships no BBC logos, and is never published. Content is fetched from the BBC's and your chosen publishers' public feeds and pages for personal use only. Not affiliated with or endorsed by any publisher.
-
-Builds: every push runs GitHub Actions and uploads an APK artifact (`versionName 0.1.<build number>`).
+Without a server to push them, the app checks on a schedule. It arms an Android alarm that is allowed to fire while the phone is idle, then runs an expedited background check; WorkManager's periodic job stays as a backup, and a reboot or app update re-arms the alarm. This does not need battery optimisation turned off, but Android can still hold a check back a few minutes while the phone sleeps: setting the app's battery use to *Unrestricted* is the most prompt, and truly instant delivery would need a push server.
 
 ## Opening links in the app
-BBC News links (`/news/articles/...`, `/news/live/...`, `/news/videos/...`, old `/news/<slug>-<id>` pages, plus **Weather and Sport articles**) and article links from every publisher you've added open in Firsthand's native reader; BBC videos play in-app. Google share links (`share.google`, `search.app`) are followed first and kept only if they lead to one of those. Home and section pages, and anything else, still open in your browser. You can also Share any such link to Firsthand.
+Article links from every source you've added open in Firsthand's native reader. Google share links (`share.google`, `search.app`) are followed first and kept only if they lead to one of your sources. Home and section pages, and anything else, still open in your browser. You can also Share any such link to Firsthand.
 
 Android 12+ never auto-routes unverified web links to an app, and Android can't be told about new domains while an app is running, so this works in two steps:
-1. The app declares each catalogue publisher's domains in its manifest as a *disabled* alias, and enables the alias when you add that source (and disables it when you remove it). That is what makes the publisher appear in Android's list. After you add a source the app offers to take you to the right screen.
-2. You switch it on once: **Settings > Opening links > Open link settings** (or system Settings > Apps > Firsthand > Open by default), turn on *Open supported links*, tap *Add link* and tick the addresses. If the official BBC News app is installed, turn off its links too.
+1. The app declares each built-in source's domains in its manifest as a *disabled* alias, and enables the alias when you add that source (and disables it when you remove it). That is what makes the source appear in Android's list. After you add a source the app offers to take you to the right screen.
+2. You switch it on once: **Settings > Opening links > Open link settings** (or system Settings > Apps > Firsthand > Open by default), turn on *Open supported links*, tap *Add link* and tick the addresses. If another app from the same publisher is installed, turn off its links there.
 
 Feeds added **by address** can't be picked up automatically (their domain isn't known when the app is built), but sharing one of their articles to Firsthand opens it in the reader.
 
@@ -41,8 +43,9 @@ Feeds added **by address** can't be picked up automatically (their domain isn't 
 
 ### Releasing
 1. Add four repository secrets (Settings > Secrets and variables > Actions): `KEYSTORE_B64` (base64 of the keystore), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. A stable key is required: Android refuses an update signed with a different key than the installed app. Without the secrets builds fall back to the debug key and are published only as pre-releases (never offered by the updater).
-2. Actions > *Build APK* > Run workflow > tick **release**. It builds, tests, signs and publishes release `v0.1.<build number>` with `firsthand-0.1.<build number>.apk`; `versionCode` is the build number, so every build is a new patch version. In this repo the build number is the run number **+ 100**, so releases here always outrank the ones published from the old BBC-Revived repo (the updater only offers a higher number). The old repo's workflow uses the plain run number.
-Keep the keystore safe and out of the repo: losing it means reinstalling once.
+2. Actions > *Build APK* > Run workflow > tick **release**. It builds, tests, signs and publishes release `v0.1.<build number>` with `firsthand-0.1.<build number>.apk`. The build number is the CI run number plus a fixed offset and becomes the app's `versionCode`, so every build is a new patch version.
+
+Every push also runs the unit tests and builds an APK artifact. Keep the keystore safe and out of the repo: losing it means reinstalling once.
 
 ## Licence and FOSS compliance
-GPL-3.0-or-later (see `LICENSE`). Every dependency is FOSS (AndroidX, Kotlin, kotlinx.serialization, OkHttp, Coil, Haze: Apache-2.0; jsoup: MIT). No Google Play Services, analytics, ads, crash reporters or proprietary binaries; the APK embeds no dependency-info blob. BBC and other publishers' content is not covered by this licence and is not bundled.
+GPL-3.0-or-later (see `LICENSE`). Every dependency is FOSS (AndroidX, Kotlin, kotlinx.serialization, OkHttp, Coil, Haze: Apache-2.0; jsoup: MIT). No Google Play Services, analytics, ads, crash reporters or proprietary binaries; the APK embeds no dependency-info blob. Publishers' content is not covered by this licence and is not bundled.

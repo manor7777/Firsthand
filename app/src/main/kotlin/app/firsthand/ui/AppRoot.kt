@@ -69,6 +69,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     val articleInfo by vm.articleInfo.collectAsStateWithLifecycle()
     val pages by vm.pages.collectAsStateWithLifecycle()
     val blocked by vm.blockedAuthors.collectAsStateWithLifecycle()
+    val blockedTerms by vm.blockedTerms.collectAsStateWithLifecycle()
     val sources by vm.sources.collectAsStateWithLifecycle()
     val bbcOn by vm.bbcEnabled.collectAsStateWithLifecycle()
     val videos by vm.videos.collectAsStateWithLifecycle()
@@ -138,7 +139,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
         }
         AnimatedVisibility(settingsOpen, enter = slideInHorizontally { it }, exit = slideOutHorizontally { it }) {
             SettingsScreen(accent, mode, vm::setAccent, vm::setThemeMode, vm::exportJson, vm::importJson, alerts, updates,
-                BlockedUi(blocked, vm::unblockAuthor), SourcesUi(sources, vm::addSource, vm::addCustomSource, vm::removeSource, bbcOn, vm::setBbcEnabled)) { settingsOpen = false }
+                BlockedUi(blocked, vm::unblockAuthor, blockedTerms, vm::addBlockedTerm, vm::removeBlockedTerm), SourcesUi(sources, vm::addSource, vm::addCustomSource, vm::removeSource, bbcOn, vm::setBbcEnabled)) { settingsOpen = false }
         }
     }
 }

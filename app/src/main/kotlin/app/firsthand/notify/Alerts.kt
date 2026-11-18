@@ -22,6 +22,7 @@ import androidx.core.content.ContextCompat
 import androidx.work.*
 import app.firsthand.MainActivity
 import app.firsthand.R
+import app.firsthand.data.Blocking
 import app.firsthand.data.Categories
 import app.firsthand.data.DeepLinks
 import app.firsthand.data.Prefs
@@ -218,6 +219,9 @@ object BreakingCheck {
             val kws = follows.filter(Categories::isKeyword).map { it.removePrefix(Categories.KW).lowercase() }
             candidates = candidates.filter { s -> s.url in urls || kws.any { (s.title + " " + s.summary).lowercase().contains(it) } }
         }
+        // Never alert about stories matching a blocked keyword.
+        val rules = Blocking.parseAll(prefs.blockedTerms.first())
+        if (rules.isNotEmpty()) candidates = candidates.filterNot { s -> rules.any { it.matches(s) } }
         // Never alert about articles by a blocked writer (or co-written by one).
         val blocked = prefs.blockedAuthors.first().map({ app.firsthand.data.Author.key(it) }).toSet()
         if (blocked.isNotEmpty()) candidates = candidates.filterNot { s -> repo.byline(s.url).any { app.firsthand.data.Author.key(it.name) in blocked } }

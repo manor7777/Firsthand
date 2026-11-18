@@ -25,6 +25,8 @@ import app.firsthand.platform.ExternalBrowser
 import app.firsthand.update.UpdateChecker
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
+import app.firsthand.data.BlockScope
+import app.firsthand.data.Blocking
 import app.firsthand.data.Source
 import app.firsthand.data.Sources
 
@@ -188,8 +190,31 @@ fun SettingsScreen(
                     }
                 }
             }
+            Heading("Blocked keywords")
+            Text("Hide stories about something you don't want to see. Choose how strictly to match:", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Subject: the word is in the headline or the story's topic tags, so it's what the story is about. A story that only mentions it in passing stays.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Story: the word appears anywhere in the headline, summary or tags, even in passing.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            var keyword by remember { mutableStateOf("") }
+            var keywordScope by remember { mutableStateOf(BlockScope.Subject) }
+            var keywordMsg by remember { mutableStateOf<String?>(null) }
+            OutlinedTextField(keyword, { keyword = it.take(60); keywordMsg = null }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Keyword or phrase, e.g. Justin Bieber") })
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                BlockScope.entries.forEach { sc -> FilterChip(keywordScope == sc, { keywordScope = sc }, { Text(sc.label) }) }
+                Spacer(Modifier.weight(1f))
+                Button({ val m = blocked.addTerm(keyword, keywordScope); if (m == null) keyword = "" else keywordMsg = m }, enabled = keyword.isNotBlank()) { Text("Block") }
+            }
+            keywordMsg?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            Blocking.parseAll(blocked.terms).forEach { rule ->
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text(rule.term, style = MaterialTheme.typography.bodyLarge)
+                        Text(if (rule.scope == BlockScope.Subject) "Subject: headline or tags" else "Story: headline, summary or tags", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    OutlinedButton({ blocked.removeTerm(rule.line) }) { Text("Remove") }
+                }
+            }
             Heading("Backup")
-            Text("Export your followed topics, sections, writers, keywords, added sources, blocked writers, theme and accent to a file, or restore them from one.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Export your followed topics, sections, writers, keywords, added sources, blocked writers and keywords, theme and accent to a file, or restore them from one.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button({ export.launch("firsthand-settings.json") }) { Text("Export") }
                 OutlinedButton({ import.launch(arrayOf("application/json", "text/*", "*/*")) }) { Text("Import") }
@@ -222,7 +247,11 @@ private fun Swatch(label: String, color: Color?, selected: Boolean, onClick: () 
 
 @Composable private fun BackHandlerCompat(onBack: () -> Unit) = androidx.activity.compose.BackHandler(onBack = onBack)
 
-class BlockedUi(val names: List<String>, val unblock: (String) -> Unit)
+class BlockedUi(
+    val names: List<String>, val unblock: (String) -> Unit,
+    /** Stored keyword rules ("subject|Justin Bieber"); [addTerm] returns an error message or null; [removeTerm] takes a stored line. */
+    val terms: List<String>, val addTerm: (String, BlockScope) -> String?, val removeTerm: (String) -> Unit,
+)
 
 class SourcesUi(
     val added: List<Source>, val add: (Source) -> Unit,

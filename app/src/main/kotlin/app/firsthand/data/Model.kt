@@ -16,6 +16,8 @@ data class Story(
     val authors: List<Author> = emptyList(),
     /** Full article HTML some feeds ship inside the item (content:encoded), so the reader needs no page fetch. */
     val contentHtml: String? = null,
+    /** Topic tags the feed gave the story (Reach: media:keywords; any feed's category elements). Used to tell what a story is about. */
+    val tags: List<String> = emptyList(),
 )
 
 data class PageMeta(val title: String?, val description: String?, val image: String?)

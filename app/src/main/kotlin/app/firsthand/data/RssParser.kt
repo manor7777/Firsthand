@@ -50,6 +50,7 @@ object RssParser {
                 source = source,
                 authors = if (source != null) authors(e).map { it.copy(source = source) } else emptyList(),
                 contentHtml = html.takeIf { it.length > 400 },
+                tags = tags(e),
             )
         }
         return Parsed(channelTitle, out)
@@ -70,6 +71,11 @@ object RssParser {
         while (n != null) { if (n is Element && n.tagName == tag) out += n; n = n.nextSibling }
         return out
     }
+
+    /** Topic tags: every <category> plus comma-separated <media:keywords>, deduplicated. */
+    internal fun tags(e: Element): List<String> =
+        (directAll(e, "category").flatMap { listOf(it.textContent, it.getAttribute("term")) } + direct(e, "media:keywords").split(','))
+            .map { it.replace(Regex("\\s+"), " ").trim() }.filter { it.length in 2..80 }.distinctBy { it.lowercase() }
 
     private fun atomLink(e: Element): String {
         val links = directAll(e, "link")

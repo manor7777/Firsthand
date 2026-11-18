@@ -83,11 +83,33 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val blockedAuthors = prefs.blockedAuthors.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     private val _bylines = MutableStateFlow<Map<String, List<Author>>>(emptyMap())
     /** URLs of articles credited (even partly) to a blocked writer. */
-    private val hidden: StateFlow<Set<String>> = combine(blockedAuthors, _bylines) { b, by ->
+    /** Keywords the user has blocked, as stored lines ("subject|Justin Bieber"), and the parsed rules. */
+    val blockedTerms = prefs.blockedTerms.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    private val blockedRules: StateFlow<List<BlockRule>> = blockedTerms.map(Blocking::parseAll).stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** Everything to hide: articles by blocked writers (by URL) and stories matching a blocked keyword. */
+    private class Hide(val urls: Set<String>, val rules: List<BlockRule>) {
+        val isEmpty get() = urls.isEmpty() && rules.isEmpty()
+        fun hides(s: Story) = s.url in urls || rules.any { it.matches(s) }
+    }
+    private val hidden: StateFlow<Hide> = combine(blockedAuthors, _bylines, blockedRules) { b, by, rules ->
         val keys = b.map { Author.key(it) }.toSet()
-        if (keys.isEmpty()) emptySet() else by.filterValues { a -> a.any { Author.key(it.name) in keys } }.keys
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
-    private fun List<Story>.visible(h: Set<String>) = if (h.isEmpty()) this else filterNot { it.url in h }
+        Hide(if (keys.isEmpty()) emptySet() else by.filterValues { a -> a.any { Author.key(it.name) in keys } }.keys, rules)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, Hide(emptySet(), emptyList()))
+    private fun List<Story>.visible(h: Hide) = if (h.isEmpty) this else filterNot { h.hides(it) }
+
+    /** Adds a blocked keyword. Returns a message if it can't be added, else null. */
+    fun addBlockedTerm(raw: String, scope: BlockScope): String? {
+        val term = Blocking.clean(raw) ?: return "Enter 2 to 60 characters, with at least one letter or number, and no | symbol."
+        val rule = BlockRule(term, scope)
+        if (rule in blockedRules.value) return "You've already blocked that."
+        viewModelScope.launch { prefs.setBlockedTerms(blockedTerms.value + rule.line) }
+        return null
+    }
+    fun removeBlockedTerm(line: String) {
+        val gone = Blocking.parse(line)
+        viewModelScope.launch { prefs.setBlockedTerms(blockedTerms.value.filterNot { Blocking.parse(it) == gone }) }
+    }
 
     fun isBlocked(name: String) = blockedAuthors.value.any { Author.key(it) == Author.key(name) }
     fun blockAuthor(name: String) {
@@ -134,10 +156,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val version: Int = 1, val follows: List<String> = emptyList(), val accent: String = "dynamic", val theme: String = "system",
         val alertOnlyFollows: Boolean = false, val alertMode: String = "breaking", val alertInterval: Int = 30,
         val blockedAuthors: List<String> = emptyList(), val sources: List<String> = emptyList(), val bbc: Boolean = true,
+        val blockedTerms: List<String> = emptyList(),
     )
 
     fun exportJson(): String = kotlinx.serialization.json.Json { prettyPrint = true }
-        .encodeToString(SettingsExport.serializer(), SettingsExport(1, follows.value, accent.value, themeMode.value, alertOnlyFollows.value, alertMode.value, alertInterval.value, blockedAuthors.value, sourceEntries.value, bbcEnabled.value))
+        .encodeToString(SettingsExport.serializer(), SettingsExport(1, follows.value, accent.value, themeMode.value, alertOnlyFollows.value, alertMode.value, alertInterval.value, blockedAuthors.value, sourceEntries.value, bbcEnabled.value, blockedTerms.value))
 
     /** Validates then applies an exported settings file. Returns false if it isn't one. */
     fun importJson(text: String): Boolean = runCatching {
@@ -151,6 +174,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             prefs.setAlertMode(if (e.alertMode in setOf("breaking", "top")) e.alertMode else "breaking")
             prefs.setAlertInterval(e.alertInterval.coerceIn(15, 720))
             prefs.setBbcEnabled(e.bbc)
+            prefs.setBlockedTerms(Blocking.parseAll(e.blockedTerms).map { it.line })
             prefs.setSources(e.sources.filter { Sources.resolve(it) != null }.distinct())
             prefs.setBlockedAuthors(e.blockedAuthors.map(String::trim).filter { it.length in 2..80 }.distinctBy { Author.key(it) })
         }

@@ -50,6 +50,11 @@ class Prefs(private val ctx: Context) {
     val blockedAuthors: Flow<List<String>> = ctx.store.data.map { it[blockedKey]?.split('\n')?.filter(String::isNotBlank) ?: emptyList() }
     suspend fun setBlockedAuthors(v: List<String>) { ctx.store.edit { it[blockedKey] = v.joinToString("\n") } }
 
+    // Keywords whose stories are hidden: "subject|Justin Bieber" or "story|Justin Bieber", one per line (see Blocking).
+    private val termsKey = stringPreferencesKey("blocked_terms")
+    val blockedTerms: Flow<List<String>> = ctx.store.data.map { it[termsKey]?.split('\n')?.filter(String::isNotBlank) ?: emptyList() }
+    suspend fun setBlockedTerms(v: List<String>) { ctx.store.edit { it[termsKey] = v.joinToString("\n") } }
+
     // BBC News is a source like any other and can be switched off (its follows are kept, just hidden, so switching back restores them).
     private val bbcKey = booleanPreferencesKey("bbc_enabled")
     val bbcEnabled: Flow<Boolean> = ctx.store.data.map { it[bbcKey] ?: true }
