@@ -14,7 +14,7 @@ class AlertLogicTest {
         assertEquals("Football", Categories.sharedName("Soccer")); assertEquals("Culture", Categories.sharedName("TV & Radio"))
         assertEquals("Science", Categories.sharedName("Science & Environment")); assertEquals("Environment", Categories.sharedName("Climate"))
         assertEquals("Weird", Categories.sharedName("Strange News")); assertEquals("Crime", Categories.sharedName("Courts"))
-        assertNull(Categories.sharedName("Front page")); assertNull(Categories.sharedName("Exampletown News")); assertNull(Categories.sharedName("Cricket"))
+        assertNull(Categories.sharedName("Front page")); assertNull(Categories.sharedName("Local News")); assertNull(Categories.sharedName("Cricket"))
         // Every shared name is itself recognised, and every alias lands on a listed category.
         assertTrue(Categories.sharedCategories.all { Categories.sharedName(it) == it })
     }

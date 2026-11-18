@@ -5,7 +5,7 @@ import org.junit.Assert.*
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 
-/** Feed parsing for added sources. example_post.xml is a real Reach feed (copied from the browser). */
+/** Feed parsing for added sources. reach_sample.xml follows the shape of a real Reach feed (invented site, places and writers). */
 class SourcesTest {
     private fun fx(name: String): String {
         val f = File("../fixtures/sources/$name").takeIf { it.exists() } ?: File("fixtures/sources/$name")
@@ -13,14 +13,14 @@ class SourcesTest {
         return f.readText()
     }
 
-    private val reach by lazy { RssParser.parse(fx("example_post.xml"), "Front page", "Example Post") }
+    private val reach by lazy { RssParser.parse(fx("reach_sample.xml"), "Front page", "Example Post") }
 
     @Test fun reachFeedStories() {
         assertEquals(5, reach.size)
         val s = reach[0]
-        assertEquals("A52 in Exampleshire closed for several hours after lorry fire", s.title)
+        assertEquals("Main road closed for hours after lorry fire", s.title)
         assertEquals("The main road is closed in both directions", s.summary)
-        assertEquals("https://www.examplepost.com/news/local-news/a52-exampleshire-closed-live-updates-11246014", s.url)
+        assertEquals("https://www.examplepost.com/news/local-news/main-road-closed-after-lorry-fire-1001", s.url)
         assertEquals("Example Post", s.source)
         assertEquals("Local News", s.category)            // the item's own section, not the feed name
         assertEquals("UK & World News", reach[1].category) // entities decoded
@@ -111,10 +111,10 @@ class SourcesTest {
             assertTrue(s.feeds.all { Sources.validUrl(it.url) })
             assertTrue(s.feeds.all { Categories.isValid(s.follow(it)) })
         }
-        val np = Sources.catalog.first { it.name == "Example Post" }
-        assertTrue(np.feeds.any { it.url == "https://www.examplepost.com/news/local-news/?service=rss" })
-        assertEquals("https://www.examplepost.com/?service=rss", np.frontPage.url)
-        assertEquals("Example Post · Front page", Categories.label(np.follow(np.frontPage)))
+        val np = Sources.catalog.first { it.name == "Mirror" }
+        assertTrue(np.feeds.any { it.url == "https://www.mirror.co.uk/news/uk-news/?service=rss" })
+        assertEquals("https://www.mirror.co.uk/?service=rss", np.frontPage.url)
+        assertEquals("Mirror · Front page", Categories.label(np.follow(np.frontPage)))
     }
 
     @Test fun entriesRoundTripAndRejectJunk() {

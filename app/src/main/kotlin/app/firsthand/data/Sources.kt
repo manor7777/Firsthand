@@ -15,7 +15,7 @@ data class Source(
     /** The publisher's website hostnames, for opening its article links in the app (catalogue sources only). */
     val hosts: List<String> = emptyList(),
 ) {
-    /** The follow key for one of this source's sections ("Example Post · Sport"). A custom source has a single feed, labelled by its name. */
+    /** The follow key for one of this source's sections ("Mirror · Sport"). A custom source has a single feed, labelled by its name. */
     fun follow(f: SourceFeed) = Categories.feedFollow(f.url, if (custom) name else "$name · ${f.name}")
     val frontPage: SourceFeed get() = feeds.first()
     fun owns(follow: String) = Categories.isFeed(follow) && feeds.any { it.url == Categories.feedUrl(follow) }
@@ -54,9 +54,8 @@ object Sources {
     private const val NPR = "https://feeds.npr.org"
 
     val catalog: List<Source> = listOf(
-        reach("examplepost.com", "Example Post",
-            "Exampletown News" to "news/exampletown-news/", "Local News" to "news/local-news/", "Music & Nightlife" to "whats-on/music-nightlife/",
-            "Example FC" to "sport/football/example-fc/", "Example Town FC" to "sport/football/example-town-fc/"),
+        reach("mirror.co.uk", "Mirror", "UK News" to "news/uk-news/", "Politics" to "news/politics/", "World News" to "news/world-news/", "TV" to "tv/"),
+        reach("dailystar.co.uk", "Daily Star"),
         reach("derbytelegraph.co.uk", "Derby Telegraph", "Derby News" to "news/derby-news/"),
         reach("leicestermercury.co.uk", "Leicester Mercury", "Leicester News" to "news/leicester-news/"),
         reach("manchestereveningnews.co.uk", "Manchester Evening News", "Greater Manchester News" to "news/greater-manchester-news/"),
@@ -73,8 +72,6 @@ object Sources {
         reach("kentlive.news", "KentLive"), reach("essexlive.news", "EssexLive"), reach("cornwalllive.com", "Cornwall Live"),
         reach("devonlive.com", "Devon Live"), reach("edinburghlive.co.uk", "Edinburgh Live"), reach("glasgowlive.co.uk", "Glasgow Live"),
         reach("dailyrecord.co.uk", "Daily Record"), reach("dublinlive.ie", "Dublin Live"),
-        reach("mirror.co.uk", "Mirror", "UK News" to "news/uk-news/", "Politics" to "news/politics/", "World News" to "news/world-news/", "TV" to "tv/"),
-        reach("dailystar.co.uk", "Daily Star"),
         simple("The Guardian", "UK national", listOf("theguardian.com", "www.theguardian.com"),
             "UK" to "$G/uk/rss", "World" to "$G/world/rss", "Politics" to "$G/politics/rss", "Business" to "$G/uk/business/rss",
             "Technology" to "$G/uk/technology/rss", "Science" to "$G/science/rss", "Sport" to "$G/sport/rss", "Football" to "$G/football/rss",

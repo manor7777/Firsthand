@@ -1,0 +1,97 @@
+<rss xmlns:media="http://search.yahoo.com/mrss/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+<channel>
+<title>Example Post - frontpage</title>
+<link>https://www.examplepost.com</link>
+<atom:link href="https://www.examplepost.com/?service=rss" rel="self" type="application/rss+xml"/>
+<description>RSS feed from Example Post</description>
+<copyright>Example Media 2026</copyright>
+<pubDate>Wed, 18 Nov 2026 20:08:48 +0000</pubDate>
+<category>frontpage</category>
+<lastBuildDate>Wed, 18 Nov 2026 20:08:48 +0000</lastBuildDate>
+<item>
+<title>Main road closed for hours after lorry fire</title>
+<link>https://www.examplepost.com/news/local-news/main-road-closed-after-lorry-fire-1001</link>
+<guid>https://www.examplepost.com/news/local-news/main-road-closed-after-lorry-fire-1001</guid>
+<description>
+<![CDATA[ The main road is closed in both directions ]]>
+</description>
+<pubDate>Wed, 18 Nov 2026 20:08:48 +0000</pubDate>
+<author>newsdesk@examplepost.com (Alex Morgan, Jamie Rivers, Sam Taylor)</author>
+<category>Local News</category>
+<media:thumbnail url="https://i2-prod.examplepost.com/incoming/article1001.ece/ALTERNATES/s98/lorry-fire.jpg" width="98" height="98"/>
+<enclosure url="https://i2-prod.examplepost.com/incoming/article1001.ece/ALTERNATES/s615/lorry-fire.jpg" type="image/jpeg" length="754605"/>
+<media:content url="https://i2-prod.examplepost.com/incoming/article1001.ece/ALTERNATES/s615/lorry-fire.jpg" type="image/jpeg" width="615" height="409"/>
+<media:keywords>
+<![CDATA[ Fires, Fire and Rescue Service, A99, Traffic & Travel, Motoring ]]>
+</media:keywords>
+</item>
+<item>
+<title>Games network down as thousands of UK gamers report issues</title>
+<link>https://www.examplepost.com/news/uk-world-news/games-network-down-thousands-uk-1002</link>
+<guid>https://www.examplepost.com/news/uk-world-news/games-network-down-thousands-uk-1002</guid>
+<description>
+<![CDATA[ According to the outage tracker, over 5,600 reported incidents are known ]]>
+</description>
+<pubDate>Wed, 18 Nov 2026 20:00:18 +0000</pubDate>
+<author>newsdesk@examplepost.com (Casey Park, Robin Hale)</author>
+<category>UK &amp; World News</category>
+<media:thumbnail url="https://i2-prod.examplepost.com/incoming/article1002.ece/ALTERNATES/s98/games-console.jpg" width="98" height="98"/>
+<enclosure url="https://i2-prod.examplepost.com/incoming/article1002.ece/ALTERNATES/s615/games-console.jpg" type="image/jpeg" length="754605"/>
+<media:content url="https://i2-prod.examplepost.com/incoming/article1002.ece/ALTERNATES/s615/games-console.jpg" type="image/jpeg" width="615" height="409"/>
+<media:keywords>
+<![CDATA[ Technology ]]>
+</media:keywords>
+</item>
+<item>
+<title>Town theatre cancels all concerts after man dies in 'tragic incident'</title>
+<link>https://www.examplepost.com/news/local-news/town-theatre-cancels-concerts-1003</link>
+<guid>https://www.examplepost.com/news/local-news/town-theatre-cancels-concerts-1003</guid>
+<description>
+<![CDATA[ A touring company was due to perform several concerts at the venue this week ]]>
+</description>
+<pubDate>Wed, 18 Nov 2026 18:24:54 +0000</pubDate>
+<author>newsdesk@examplepost.com (Sam Taylor)</author>
+<category>Local News</category>
+<media:thumbnail url="https://i2-prod.examplepost.com/incoming/article1003.ece/ALTERNATES/s98/theatre-front.jpg" width="98" height="98"/>
+<enclosure url="https://i2-prod.examplepost.com/incoming/article1003.ece/ALTERNATES/s615/theatre-front.jpg" type="image/jpeg" length="754605"/>
+<media:content url="https://i2-prod.examplepost.com/incoming/article1003.ece/ALTERNATES/s615/theatre-front.jpg" type="image/jpeg" width="615" height="409"/>
+<media:keywords>
+<![CDATA[ Town Centre, Royal Theatre Exampletown, Theatre, Exampleshire Police ]]>
+</media:keywords>
+</item>
+<item>
+<title>First acts announced for new park music festival</title>
+<link>https://www.examplepost.com/whats-on/music-nightlife/first-acts-announced-park-festival-1004</link>
+<guid>https://www.examplepost.com/whats-on/music-nightlife/first-acts-announced-park-festival-1004</guid>
+<description>
+<![CDATA[ The one-day event will take place next summer ]]>
+</description>
+<pubDate>Wed, 18 Nov 2026 18:00:00 +0000</pubDate>
+<author>newsdesk@examplepost.com (Drew Ellis)</author>
+<category>Music &amp; Nightlife</category>
+<media:thumbnail url="https://i2-prod.examplepost.com/incoming/article1004.ece/ALTERNATES/s98/festival-poster.jpg" width="98" height="98"/>
+<enclosure url="https://i2-prod.examplepost.com/incoming/article1004.ece/ALTERNATES/s615/festival-poster.jpg" type="image/jpeg" length="754605"/>
+<media:content url="https://i2-prod.examplepost.com/incoming/article1004.ece/ALTERNATES/s615/festival-poster.jpg" type="image/jpeg" width="615" height="409"/>
+<media:keywords>
+<![CDATA[ Events, Things to do in Exampletown, Entertainment ]]>
+</media:keywords>
+</item>
+<item>
+<title>Knife crime and empty shop break-ins are 'symptom of poverty' as report released </title>
+<link>https://www.examplepost.com/news/exampletown-news/knife-crime-empty-shop-break-ins-1005</link>
+<guid>https://www.examplepost.com/news/exampletown-news/knife-crime-empty-shop-break-ins-1005</guid>
+<description>
+<![CDATA[ The city council is drawing up a new plan to address the root causes of serious violence ]]>
+</description>
+<pubDate>Wed, 18 Nov 2026 17:55:25 +0000</pubDate>
+<author>newsdesk@examplepost.com (Pat Quinn, Local Democracy Reporter, Pat Quinn - Local Democracy Reporter)</author>
+<category>Exampletown News</category>
+<media:thumbnail url="https://i2-prod.examplepost.com/news/exampletown-news/article1005.ece/ALTERNATES/s98/shop-front.jpg" width="98" height="98"/>
+<enclosure url="https://i2-prod.examplepost.com/news/exampletown-news/article1005.ece/ALTERNATES/s615/shop-front.jpg" type="image/jpeg" length="754605"/>
+<media:content url="https://i2-prod.examplepost.com/news/exampletown-news/article1005.ece/ALTERNATES/s615/shop-front.jpg" type="image/jpeg" width="615" height="409"/>
+<media:keywords>
+<![CDATA[ Empty shops, Crime, Town Centre, Exampletown City Council, Politics ]]>
+</media:keywords>
+</item>
+</channel>
+</rss>

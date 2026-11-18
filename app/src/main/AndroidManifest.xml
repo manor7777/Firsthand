@@ -72,7 +72,7 @@
         </activity-alias>
         <!-- One disabled alias per publisher: enabled by the app while that source is added. -->
         <activity-alias
-            android:name=".link.example_post"
+            android:name=".link.mirror"
             android:targetActivity=".MainActivity"
             android:enabled="false"
             android:exported="true"
@@ -82,8 +82,23 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" />
-                <data android:host="examplepost.com" />
-                <data android:host="www.examplepost.com" />
+                <data android:host="mirror.co.uk" />
+                <data android:host="www.mirror.co.uk" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".link.daily_star"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="dailystar.co.uk" />
+                <data android:host="www.dailystar.co.uk" />
             </intent-filter>
         </activity-alias>
         <activity-alias
@@ -399,36 +414,6 @@
                 <data android:scheme="https" />
                 <data android:host="dublinlive.ie" />
                 <data android:host="www.dublinlive.ie" />
-            </intent-filter>
-        </activity-alias>
-        <activity-alias
-            android:name=".link.mirror"
-            android:targetActivity=".MainActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Firsthand">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" />
-                <data android:host="mirror.co.uk" />
-                <data android:host="www.mirror.co.uk" />
-            </intent-filter>
-        </activity-alias>
-        <activity-alias
-            android:name=".link.daily_star"
-            android:targetActivity=".MainActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Firsthand">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" />
-                <data android:host="dailystar.co.uk" />
-                <data android:host="www.dailystar.co.uk" />
             </intent-filter>
         </activity-alias>
         <activity-alias

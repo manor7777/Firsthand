@@ -4,7 +4,7 @@ import os, re, sys
 
 SHOTS = [  # file (without .png), caption
     ("01-home", "Home"), ("02-article", "Reader"), ("03-my-news", "My News"), ("05-sources", "Your sources"),
-    ("06-add-source", "Add a source"), ("08-my-news-exampletown", "A local paper's stories"), ("09-article-source", "Writers and share"),
+    ("06-add-source", "Add a source"), ("08-my-news-source", "Another source's stories"), ("09-article-source", "Writers and share"),
 ]
 DIR = "docs/screenshots"
 start, end = "<!-- screenshots:start -->", "<!-- screenshots:end -->"

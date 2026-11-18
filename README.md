@@ -6,14 +6,11 @@ A private, sideloaded Android news reader that pulls from the sources you choose
 
 ## Screenshots
 <!-- screenshots:start -->
-<table>
-<tr><td align="center"><img src="docs/screenshots/01-home.png" width="190" alt="Home"><br><sub>Home</sub></td><td align="center"><img src="docs/screenshots/02-article.png" width="190" alt="Reader"><br><sub>Reader</sub></td><td align="center"><img src="docs/screenshots/03-my-news.png" width="190" alt="My News"><br><sub>My News</sub></td><td align="center"><img src="docs/screenshots/05-sources.png" width="190" alt="Your sources"><br><sub>Your sources</sub></td></tr>
-<tr><td align="center"><img src="docs/screenshots/06-add-source.png" width="190" alt="Add a source"><br><sub>Add a source</sub></td><td align="center"><img src="docs/screenshots/08-my-news-exampletown.png" width="190" alt="A local paper's stories"><br><sub>A local paper's stories</sub></td><td align="center"><img src="docs/screenshots/09-article-source.png" width="190" alt="Writers and share"><br><sub>Writers and share</sub></td></tr>
-</table>
+_No screenshots yet: run the **Screenshots** workflow (Actions tab) to generate them._
 <!-- screenshots:end -->
 
 ## Features
-- **News sources.** Pick your own: a built-in list (regional and national UK papers such as the Reach titles, Guardian, Sky News, Independent, Mail and Metro, plus world and tech sources) or any RSS/Atom feed address you paste in. Add and remove them in **Settings > News sources**; each source's sections appear in *My News* under its name. Every story card shows its source as a pill ("BBC News", "Example Post"), with its section and age, plus BREAKING or LIVE pills when a source flags them.
+- **News sources.** Pick your own: a built-in list (regional and national UK papers such as the Reach titles, Guardian, Sky News, Independent, Mail and Metro, plus world and tech sources) or any RSS/Atom feed address you paste in. Add and remove them in **Settings > News sources**; each source's sections appear in *My News* under its name. Every story card shows its source as a pill ("BBC News", "Sky News"), with its section and age, plus BREAKING or LIVE pills when a source flags them.
 - **BBC News is the default source.** A fresh install starts with it added. Remove it like any other source and nothing from it is shown or loaded (Home becomes a "For you" page built from your other sources, and its links go to your browser). It sits first in the *Add a source* list under *Default sources*; adding it back restores your topics.
 - **Reader.** A native reader for articles, with live pages and in-app video where a source provides them. Pages that can't be read as text fall back to the story's summary and an *Open original* button. Live pages show their posts natively as text and pictures (no embedded website), refreshing every 30 seconds.
 - **Select, share and block from the reader.** Press and hold to select text in an article, live page or video page and adjust the handles as usual; the menu offers Copy, Select all, Share and **Block keyword** (choose Subject or Story scope, then it's added to *Settings > Blocked keywords*). A Share button beside the story counter shares the headline and link. Note that Share and Block keyword pass the selection through the clipboard, so it replaces whatever you last copied.

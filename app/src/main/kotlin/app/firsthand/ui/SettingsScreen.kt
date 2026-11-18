@@ -423,7 +423,7 @@ private fun AlertsTab(alerts: AlertState, onStatus: (String) -> Unit) {
         var word by remember { mutableStateOf("") }
         var wordScope by remember { mutableStateOf(BlockScope.Subject) }
         var wordMsg by remember { mutableStateOf<String?>(null) }
-        OutlinedTextField(word, { word = it.take(60); wordMsg = null }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Keyword or phrase, e.g. Example FC") })
+        OutlinedTextField(word, { word = it.take(60); wordMsg = null }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Keyword or phrase, e.g. Bank of England") })
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             BlockScope.entries.forEach { sc -> FilterChip(wordScope == sc, { wordScope = sc }, { Text(sc.label) }) }
             Spacer(Modifier.weight(1f))

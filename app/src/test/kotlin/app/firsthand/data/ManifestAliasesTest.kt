@@ -69,18 +69,18 @@ $ind</activity-alias>""".trimStart('\n')
     }
 
     @Test fun linkMatching() {
-        val np = Sources.catalog.first { it.name == "Example Post" }
+        val np = Sources.catalog.first { it.name == "Mirror" }
         val g = Sources.catalog.first { it.name == "The Guardian" }
         val added = listOf(np)
         fun m(u: String) = Sources.matchLink(u, added)?.name
-        assertEquals("Example Post", m("https://www.examplepost.com/news/local-news/a52-exampleshire-closed-live-updates-11246014"))
-        assertEquals("Example Post", m("https://examplepost.com/whats-on/music-nightlife/first-acts-announced-11246085?utm=x"))
-        assertNull(m("https://www.examplepost.com/"))                       // home page: not an article
-        assertNull(m("https://www.examplepost.com/news/"))                  // one short segment: a section page
+        assertEquals("Mirror", m("https://www.mirror.co.uk/news/uk-news/some-story-title-12345678"))
+        assertEquals("Mirror", m("https://mirror.co.uk/tv/some-show-review-87654321?utm=x"))
+        assertNull(m("https://www.mirror.co.uk/"))                       // home page: not an article
+        assertNull(m("https://www.mirror.co.uk/news/"))                  // one short segment: a section page
         assertNull(m("https://www.theguardian.com/uk-news/2026/nov/18/some-story")) // not added
-        assertNull(m("https://evil.example.com/www.examplepost.com/a/b"))
-        assertNull(m("https://user@www.examplepost.com/news/a/b-123456"))
-        assertNull(m("ftp://www.examplepost.com/news/a/b-123456"))
+        assertNull(m("https://evil.example.com/www.mirror.co.uk/a/b"))
+        assertNull(m("https://user@www.mirror.co.uk/news/a/b-123456"))
+        assertNull(m("ftp://www.mirror.co.uk/news/a/b-123456"))
         assertEquals("The Guardian", Sources.matchLink("https://www.theguardian.com/uk-news/2026/nov/18/some-story", listOf(np, g))?.name)
         val custom = Sources.resolve(Sources.customEntry("https://feeds.example.org/rss.xml", "Example"))!!
         assertEquals(listOf("example.org", "www.example.org"), custom.hosts)

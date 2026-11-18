@@ -1,7 +1,7 @@
 name: Screenshots
 # Boots an Android emulator, installs a debug build, tours the main screens and commits the screenshots to docs/screenshots,
 # then updates the screenshots section of README.md. Run it by hand (Actions > Screenshots > Run workflow) after UI changes.
-# The pictures show whatever news is live at the time, from the sources the tour adds (BBC News by default, plus Example Post).
+# The pictures show whatever news is live at the time, from the sources the tour adds (BBC News by default, plus one added source).
 on:
   workflow_dispatch:
     inputs:

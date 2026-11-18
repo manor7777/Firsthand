@@ -66,7 +66,7 @@ val LocalShowSource = compositionLocalOf { false }
 private fun Titles(s: Story, style: androidx.compose.ui.text.TextStyle) {
     Text(s.title, style = style, fontWeight = FontWeight.SemiBold, maxLines = 4, overflow = TextOverflow.Ellipsis)
     Spacer(Modifier.height(6.dp))
-    // Pills say what and who: BREAKING / LIVE when flagged, then the source on every story ("BBC News", "Example Post"),
+    // Pills say what and who: BREAKING / LIVE when flagged, then the source on every story ("BBC News", "Mirror"),
     // then the section and age as plain text, which gives way (ellipsis) when the row is full.
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         if (s.breaking) Pill("BREAKING", MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)

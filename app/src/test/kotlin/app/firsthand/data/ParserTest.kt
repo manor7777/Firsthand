@@ -121,7 +121,7 @@ class KeywordMatchTest {
         assertEquals("US & Canada", Categories.normalize("kw:us and canada"))
         assertEquals("Health", Categories.normalize("Health"))
         assertEquals("kw:diabetes", Categories.normalize("kw:diabetes")) // not a catalogue topic: stays a keyword
-        assertEquals("kw:exampletown", Categories.normalize("kw:exampletown"))
+        assertEquals("kw:harrogate", Categories.normalize("kw:harrogate"))
     }
 }
 

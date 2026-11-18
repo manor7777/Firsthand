@@ -53,15 +53,15 @@ class BlockingTest {
     }
 
     @Test fun reachFeedTagsDriveSubjectBlocking() {
-        val f = File("../fixtures/sources/example_post.xml").takeIf { it.exists() } ?: File("fixtures/sources/example_post.xml")
+        val f = File("../fixtures/sources/reach_sample.xml").takeIf { it.exists() } ?: File("fixtures/sources/reach_sample.xml")
         assumeTrue("fixture missing", f.exists())
         val stories = RssParser.parse(f.readText(), "Front page", "Example Post")
-        assertTrue(stories[0].tags.containsAll(listOf("Local News", "A52", "Fires", "Traffic & Travel")))
-        // Blocking the subject "Theatre Royal Exampletown" removes only the story tagged with it.
-        val rule = BlockRule("Theatre Royal Exampletown", BlockScope.Subject)
+        assertTrue(stories[0].tags.containsAll(listOf("Local News", "A99", "Fires", "Traffic & Travel")))
+        // Blocking the subject "Royal Theatre Exampletown" removes only the story tagged with it.
+        val rule = BlockRule("Royal Theatre Exampletown", BlockScope.Subject)
         assertEquals(1, stories.count { rule.matches(it) })
-        assertEquals("Exampletown Theatre Royal cancels all Opera North performances after man dies in 'tragic incident'", stories.first { rule.matches(it) }.title)
+        assertEquals("Town theatre cancels all concerts after man dies in 'tragic incident'", stories.first { rule.matches(it) }.title)
         // "Technology" is only a tag on the PlayStation story, so blocking it as a subject hides just that one.
-        assertEquals(listOf("PlayStation Network down as thousands of UK gamers report issues"), stories.filter { BlockRule("Technology", BlockScope.Subject).matches(it) }.map { it.title })
+        assertEquals(listOf("Games network down as thousands of UK gamers report issues"), stories.filter { BlockRule("Technology", BlockScope.Subject).matches(it) }.map { it.title })
     }
 }

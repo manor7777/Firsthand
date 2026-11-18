@@ -42,7 +42,7 @@ tap "My News" && { sleep 8; shot 03-my-news 2; }
 
 tap "Settings" && {
   scroll_to "News sources" && { adb shell input swipe $((W/2)) $((H*60/100)) $((W/2)) $((H*45/100)) 300; sleep 1; shot 05-sources 1; }
-  tap "Add a source" && { shot 06-add-source 1.5; tap "Example Post" && tap "Not now"; }
+  tap "Add a source" && { shot 06-add-source 1.5; tap "Mirror" && tap "Not now"; }
   back                                   # leave Settings
 }
 
@@ -50,7 +50,7 @@ tap "My News" && {
   sleep 3
   # The section chips are a horizontally scrolling row: swipe it so the newly added source's chip is on screen.
   if xy=$(find_xy "All"); then y=${xy#* }; adb shell input swipe $((W*85/100)) "$y" $((W*10/100)) "$y" 300; sleep 1; fi
-  tap "Example Post" && { sleep 10; shot 08-my-news-exampletown 2; }
+  tap "Mirror" && { sleep 10; shot 08-my-news-source 2; }
 }
 tap --card && { sleep 10; shot 09-article-source 2; }
 
