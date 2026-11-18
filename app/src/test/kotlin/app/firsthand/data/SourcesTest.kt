@@ -124,10 +124,10 @@ class SourcesTest {
               "author":[{"@type":"Person","name":"Sam Taylor"}],"datePublished":"2026-11-18T20:08:48+00:00","dateModified":"2026-11-18T21:00:00Z"}</script></head>
             <body><header><nav><p>Home News Sport Weather and other long navigation words here</p></nav></header>
             <article><h1>Headline</h1><div class="byline">By Sam Taylor</div>
-            <p>${para.repeat(2)}</p><aside><p>${para}</p></aside>
-            <p>${para.repeat(2)}</p><div class="related-articles"><p>READ MORE: some other story that is promoted here for you</p></div>
+            <p>Paragraph 1. ${para.repeat(2)}</p><aside><p>${para}</p></aside>
+            <p>Paragraph 2. ${para.repeat(2)}</p><div class="related-articles"><p>READ MORE: some other story that is promoted here for you</p></div>
             <h2>A subheading</h2><figure><img src="/img/a.jpg" width="600"><figcaption>Cap here</figcaption></figure>
-            <p>${para.repeat(2)}</p><p>Sign up to our newsletter for the latest news every day</p><blockquote>A quoted line that is long enough.</blockquote>
+            <p>Paragraph 3. ${para.repeat(2)}</p><p>Sign up to our newsletter for the latest news every day</p><blockquote>A quoted line that is long enough.</blockquote>
             </article><footer><p>${para}</p></footer></body></html>"""
         val r = ExternalArticle.parse(html, "https://example.com/a", "Example")
         assertEquals(3, r.blocks.count { it is Block.Paragraph })
