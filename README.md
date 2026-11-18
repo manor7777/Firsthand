@@ -4,6 +4,11 @@ A private, sideloaded Android news reader that pulls from the sources you choose
 
 **Unofficial.** Firsthand is not affiliated with, endorsed by or sponsored by any publisher. It uses its own icon, ships no publisher logos, and is never published. Content is fetched from the public feeds and pages of the sources you add, for personal use only.
 
+## Screenshots
+<!-- screenshots:start -->
+_No screenshots yet: run the **Screenshots** workflow (Actions tab) to generate them._
+<!-- screenshots:end -->
+
 ## Features
 - **News sources.** Pick your own: a built-in list (regional and national UK papers such as the Reach titles, Guardian, Sky News, Independent, Mail and Metro, plus world and tech sources) or any RSS/Atom feed address you paste in. Add and remove them in **Settings > News sources**; each source's sections appear in *My News* under its name.
 - **BBC News is the default source.** A fresh install starts with it added. Remove it like any other source and nothing from it is shown or loaded (Home becomes a "For you" page built from your other sources, and its links go to your browser). It sits first in the *Add a source* list under *Default sources*; adding it back restores your topics.
@@ -46,7 +51,7 @@ Feeds added **by address** can't be picked up automatically (their domain isn't 
 1. Add four repository secrets (Settings > Secrets and variables > Actions): `KEYSTORE_B64` (base64 of the keystore), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. A stable key is required: Android refuses an update signed with a different key than the installed app. Without the secrets builds fall back to the debug key and are published only as pre-releases (never offered by the updater).
 2. Actions > *Build APK* > Run workflow > tick **release**. It builds, tests, signs and publishes release `v0.1.<build number>` with `firsthand-0.1.<build number>.apk`. The build number is the CI run number plus a fixed offset and becomes the app's `versionCode`, so every build is a new patch version.
 
-Every push also runs the unit tests and builds an APK artifact. Keep the keystore safe and out of the repo: losing it means reinstalling once.
+Every push also runs the unit tests and builds an APK artifact. The **Screenshots** workflow (run by hand from the Actions tab, dark or light) boots an Android emulator, tours the main screens, commits the pictures to `docs/screenshots/` and refreshes the section at the top of this README. Keep the keystore safe and out of the repo: losing it means reinstalling once.
 
 ## Licence and FOSS compliance
 GPL-3.0-or-later (see `LICENSE`). Every dependency is FOSS (AndroidX, Kotlin, kotlinx.serialization, OkHttp, Coil, Haze: Apache-2.0; jsoup: MIT). No Google Play Services, analytics, ads, crash reporters or proprietary binaries; the APK embeds no dependency-info blob. Publishers' content is not covered by this licence and is not bundled.

@@ -8,4 +8,5 @@ Android news reader (formerly BBC Revived). Package ID is `app.firsthand`; it wa
 - Link handling: each catalogue source has hosts in `Sources.kt` and a disabled `<activity-alias>` in `AndroidManifest.xml` (generated). After editing `Sources.catalog`, regenerate with `REGEN_MANIFEST=1 ./gradlew testDebugUnitTest --tests '*ManifestAliasesTest*'` and commit the manifest. Never put `--` inside an XML comment.
 - Releases come from the *Build APK* workflow (`workflow_dispatch`, tick `release`). Build number = run number + 100 in this repo. Signing secrets keep the `bbcrevived` alias; do not rename them.
 - The Android SDK can't be downloaded in the cloud container, so the app builds only in CI. The pure-Kotlin data layer (`data/*.kt` except `Repository`/`Prefs`) can be unit-tested on a plain JVM.
+- Screenshots: the *Screenshots* workflow (`workflow_dispatch`) drives an emulator with `tools/screenshots/shoot.sh` (finds buttons by their text via uiautomator, so renaming a button label there breaks the tour) and rewrites the README section between the `screenshots:` markers. Re-run it after visible UI changes.
 - Develop on `main` in this repo.
