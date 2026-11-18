@@ -81,7 +81,9 @@ class InstallReceiver : BroadcastReceiver() {
                 confirm?.let { runCatching { ctx.startActivity(it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
                 Installer.result.value = "Waiting for you to confirm the install…"
             }
-            PackageInstaller.STATUS_SUCCESS -> Installer.result.value = "Updated. Firsthand will restart."
+            // Nothing to say on success: Android replaces and restarts the app by itself, and it delivers this result to the NEW
+            // (already updated) process, where a "will restart" message would just be wrong. Clear any "waiting to confirm" text.
+            PackageInstaller.STATUS_SUCCESS -> Installer.result.value = null
             PackageInstaller.STATUS_FAILURE_CONFLICT, PackageInstaller.STATUS_FAILURE_INCOMPATIBLE ->
                 Installer.result.value = "Android refused the update because it was signed with a different key. Uninstall the app once and install the latest release."
             else -> Installer.result.value = "Install failed (${i.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE) ?: "code $status"})."
