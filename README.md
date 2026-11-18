@@ -7,7 +7,7 @@ A private, sideloaded Android news reader in the style of BBC News, built with K
 Builds: every push runs GitHub Actions and uploads an APK artifact (`versionName 0.1.<run number>`).
 
 ## Opening BBC links in the app
-bbc.com and bbc.co.uk **News** links (`/news/articles/...`, `/news/live/...`, old `/news/<slug>-<id>` pages) tapped in other apps open in BBC Revived's native reader. Videos, section pages and the rest of bbc.* still open in your browser.
+bbc.com and bbc.co.uk **News** links (`/news/articles/...`, `/news/live/...`, `/news/videos/...`, old `/news/<slug>-<id>` pages), plus **Weather and Sport articles** (same page format), tapped in other apps open in BBC Revived's native reader; videos play in-app. Google share links (`share.google`, `search.app`) are followed first and only kept if they lead to one of those. Section pages and the rest of bbc.* still open in your browser. You can also Share any BBC link to BBC Revived.
 Android 12+ never auto-routes unverified web links to an app, and BBC's domains can't be verified by us, so switch it on once: **Settings > BBC links > Open link settings** (or system Settings > Apps > BBC Revived > Open by default), turn on *Open supported links* and tick the BBC addresses. If the official BBC News app is installed, turn off its links too.
 
 ## Updates

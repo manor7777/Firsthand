@@ -38,6 +38,13 @@ class ParserTest {
         assertTrue(v.poster!!.startsWith("https://ichef.bbci.co.uk/"))
     }
 
+    @Test fun weatherArticle() {
+        val html = fx("weather.html")
+        val paras = ArticleParser.parse(html, "https://www.bbc.co.uk/weather/articles/cmvg2p9qlkz9o").filterIsInstance<Block.Paragraph>()
+        assertTrue("paragraphs ${paras.size}", paras.size >= 3)
+        assertEquals("UK weather: Is any more snow on the way?", ArticleParser.meta(html).title)
+    }
+
     @Test fun pageMetaUsesOpenGraph() {
         val m = ArticleParser.meta(fx("video.html"))
         assertEquals("Watch: What's in the Milburn review?", m.title)

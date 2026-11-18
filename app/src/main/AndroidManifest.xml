@@ -27,7 +27,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- BBC News links only (/news). Not auto-verified: the user enables them under Settings > Open by default. -->
+            <!-- BBC News links (/news) plus Weather and Sport articles. Not auto-verified: the user enables them under Settings > Open by default. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -41,6 +41,8 @@
                 <data android:host="m.bbc.co.uk" />
                 <data android:path="/news" />
                 <data android:pathPrefix="/news/" />
+                <data android:pathPrefix="/weather/articles/" />
+                <data android:pathPattern="/sport/.*/articles/.*" />
             </intent-filter>
             <!-- Google share links (Discover / Google app "Share"): resolved in-app; non-BBC ones go straight on to the browser. -->
             <intent-filter>

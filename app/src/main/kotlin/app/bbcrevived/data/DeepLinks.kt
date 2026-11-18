@@ -3,7 +3,8 @@ package app.bbcrevived.data
 import java.net.URI
 
 /**
- * Decides which tapped web links BBC Revived takes over: BBC *News* only (bbc.com and bbc.co.uk under /news),
+ * Decides which tapped web links BBC Revived takes over: BBC News (bbc.com and bbc.co.uk under /news) plus BBC
+ * Weather and Sport *articles*, which use the same page format (Google files them under BBC News too),
  * plus Google share links (share.google, search.app) which are resolved first and only kept if they lead to BBC News.
  * Pure Kotlin so it is unit-tested; the manifest filter is looser and this is the real gate.
  */
@@ -36,6 +37,11 @@ object DeepLinks {
         val u = uri(raw) ?: return null
         if (u.host?.lowercase() !in hosts) return null
         val path = (u.rawPath ?: "").trimEnd('/')
+        // Weather/Sport: only their article pages (same format as news articles); the rest of those sites stays in the browser.
+        val seg = path.trim('/').split('/')
+        if ((seg.firstOrNull() == "weather" || seg.firstOrNull() == "sport") && seg.size >= 3 &&
+            seg[seg.size - 2] == "articles" && Regex("[a-z0-9]{8,20}").matches(seg.last())
+        ) return Link.Article("https://www.bbc.co.uk$path")
         if (path != "/news" && !path.startsWith("/news/")) return null
         val url = "https://www.bbc.co.uk$path"
         val parts = path.removePrefix("/news").trim('/').split('/').filter { it.isNotEmpty() }

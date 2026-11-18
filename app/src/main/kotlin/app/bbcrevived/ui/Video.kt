@@ -13,6 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -58,14 +60,19 @@ fun VideoPage(s: Story, support: VideoSupport, visible: Boolean, follows: List<S
         }
     }
     val portrait = info?.portrait == true
-    val frame = Modifier.fillMaxWidth().then(if (portrait) Modifier.heightIn(max = 560.dp).aspectRatio(9f / 16f) else Modifier.aspectRatio(16f / 9f))
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 72.dp, bottom = 48.dp)) {
         item {
-            Box(Modifier.fillMaxWidth().background(Color.Black), Alignment.Center) {
+            // Exact size from the screen: landscape 16:9 full width; portrait 9:16 capped to 60% of the screen height.
+            BoxWithConstraints(Modifier.fillMaxWidth().background(Color.Black).clipToBounds(), contentAlignment = Alignment.Center) {
+                val screenH = LocalConfiguration.current.screenHeightDp.dp
+                val frame = if (portrait) {
+                    val h = minOf(maxWidth * 16f / 9f, screenH * 0.6f)
+                    Modifier.size(h * 9f / 16f, h)
+                } else Modifier.size(maxWidth, maxWidth * 9f / 16f)
                 when (val p = play) {
                     is Play.Native -> HlsPlayer(p.hls, frame) { play = Play.Page }
-                    Play.Page -> InlineEmbed(s.url)
+                    Play.Page -> Box(Modifier.fillMaxWidth().height(maxWidth * 9f / 16f + 120.dp)) { InlineEmbed(s.url) }
                     else -> Box(frame.clickable(enabled = info != null || loaded) { play = if (info?.versionId != null) Play.Finding else Play.Page }, Alignment.Center) {
                         (info?.poster ?: s.imageUrl)?.let { AsyncImage(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
                         Box(Modifier.size(72.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.55f)), Alignment.Center) {
@@ -104,5 +111,8 @@ private fun HlsPlayer(url: String, modifier: Modifier, onError: () -> Unit) {
         player.addListener(l)
         onDispose { player.removeListener(l); player.release() }
     }
-    AndroidView({ PlayerView(it).apply { this.player = player } }, modifier)
+    AndroidView(
+        { c -> (android.view.LayoutInflater.from(c).inflate(app.bbcrevived.R.layout.player_view, null) as PlayerView).apply { this.player = player } },
+        modifier.clipToBounds(),
+    )
 }

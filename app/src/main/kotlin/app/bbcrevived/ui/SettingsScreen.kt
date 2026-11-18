@@ -103,7 +103,7 @@ fun SettingsScreen(
             OutlinedButton({ withNotifications { alerts.sendTest() } }) { Text("Send a test alert") }
             Text("Android runs background checks roughly on schedule but may delay them to save battery. BBC doesn't publish a breaking flag, so \"Top story changes\" is the fallback.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Heading("BBC links")
-            Text("Open bbc.com and bbc.co.uk News links from other apps in BBC Revived. Android needs this switched on once: tap below, tap \"Add link\" and tick every address (the BBC ones, plus share.google and search.app for links shared from Google). Android doesn't let unofficial apps switch this on themselves. If the official BBC News app is installed, turn its links off there. You can also share any BBC link to BBC Revived.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Open bbc.com and bbc.co.uk News links (plus Weather and Sport articles, and Google share links to them) from other apps in BBC Revived. Android needs this switched on once: tap below, tap \"Add link\" and tick every address (the BBC ones, plus share.google and search.app for links shared from Google). Android doesn't let unofficial apps switch this on themselves. If the official BBC News app is installed, turn its links off there. You can also share any BBC link to BBC Revived.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             var links by remember { mutableStateOf(ExternalBrowser.linkStatus(ctx)) }
             androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { links = ExternalBrowser.linkStatus(ctx) }
             links?.let { l ->

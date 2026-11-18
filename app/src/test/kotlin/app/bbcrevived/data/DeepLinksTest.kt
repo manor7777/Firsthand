@@ -34,6 +34,20 @@ class DeepLinksTest {
         assertTrue(DeepLinks.parse("https://www.bbc.com/news/av/uk-12345678") is Link.Video)
     }
 
+    @Test fun weatherAndSportArticles() {
+        assertEquals(
+            Link.Article("https://www.bbc.co.uk/weather/articles/cmvg2p9qlkz9o"),
+            DeepLinks.parse("https://www.bbc.com/weather/articles/cmvg2p9qlkz9o?shem=dsdf,sharefoc,agadiscoversdl,,sh/x/discover/m1/4"),
+        )
+        assertEquals(
+            Link.Article("https://www.bbc.co.uk/sport/football/articles/c0abc123xyzo"),
+            DeepLinks.parse("https://www.bbc.co.uk/sport/football/articles/c0abc123xyzo"),
+        )
+        // The rest of Weather/Sport is not taken over.
+        listOf("https://www.bbc.co.uk/weather", "https://www.bbc.co.uk/weather/2643743", "https://www.bbc.co.uk/sport/football", "https://www.bbc.co.uk/sport/football/live/c1")
+            .forEach { assertNull(it, DeepLinks.parse(it)) }
+    }
+
     @Test fun googleShareLinks() {
         assertTrue(DeepLinks.isShortLink("https://share.google/EuaV7JI0KoM2JP2RD"))
         assertTrue(DeepLinks.isShortLink("https://search.app/abc"))
@@ -50,7 +64,7 @@ class DeepLinksTest {
 
     @Test fun nonNewsAndLookalikesAreRejected() {
         listOf(
-            "https://www.bbc.com/sport/football", "https://www.bbc.co.uk/iplayer", "https://www.bbc.co.uk/newsround/123", "https://www.bbc.com/newsbeat",
+            "https://www.bbc.co.uk/iplayer", "https://www.bbc.co.uk/newsround/123", "https://www.bbc.com/newsbeat",
             "https://bbc.com.evil.com/news/articles/c1", "https://evil.com/news/articles/c1", "https://www.bbc.com@evil.com/news/articles/c1",
             "https://www.bbc.com:8443/news/articles/c1", "ftp://www.bbc.com/news/articles/c1", "javascript:alert(1)", "not a url", "",
         ).forEach { assertNull(it, DeepLinks.parse(it)) }
