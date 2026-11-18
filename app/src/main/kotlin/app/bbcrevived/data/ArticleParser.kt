@@ -31,6 +31,32 @@ object ArticleParser {
         return PageMeta(title?.removeSuffix(" - BBC News")?.trim()?.takeIf { it.isNotEmpty() }, og("description"), og("image"))
     }
 
+    /** Writers credited in the article's byline block (name + role, e.g. "Business reporter"). */
+    fun byline(html: String): List<Author> {
+        val blocks = articleBlocks(html) ?: return emptyList()
+        return blocks.mapNotNull { it as? JsonObject }.filter { it.str("type") == "byline" }.flatMap { b ->
+            ((b["model"] as? JsonObject)?.get("contributors") as? JsonArray).orEmpty().mapNotNull { c ->
+                val name = c.str("name")?.trim()?.replace(Regex("\\s+"), " ")?.takeIf { it.length >= 2 } ?: return@mapNotNull null
+                Author(name, c.str("role")?.trim()?.takeIf { it.isNotEmpty() })
+            }
+        }.distinctBy { Author.key(it.name) }
+    }
+
+    /** First-published and last-updated times (ISO-8601) from the metadata block. */
+    fun published(html: String): Pair<String?, String?> {
+        val m = articleBlocks(html)?.mapNotNull { it as? JsonObject }?.firstOrNull { it.str("type") == "metadata" }?.get("model") as? JsonObject
+            ?: return null to null
+        return m.str("firstPublishedDateTime") to m.str("lastPublishedDateTime")
+    }
+
+    fun info(html: String): ArticleInfo = published(html).let { (p, u) -> ArticleInfo(byline(html), p, u) }
+
+    private fun articleBlocks(html: String): JsonArray? {
+        val root = InitialData.extract(html) ?: return null
+        return (InitialData.widgets(root, "article").firstOrNull() as? JsonObject)
+            ?.get("content")?.jsonObject?.get("model")?.jsonObject?.get("blocks") as? JsonArray
+    }
+
     /** BBC's "Related topics" for an article (each has a followable topic feed). */
     fun topics(html: String): List<TopicRef> {
         val root = InitialData.extract(html) ?: return emptyList()

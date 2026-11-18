@@ -45,6 +45,11 @@ class Prefs(private val ctx: Context) {
     suspend fun setAlertInterval(v: Int) { ctx.store.edit { it[aInterval] = v } }
     suspend fun setAlertSeen(v: List<String>) { ctx.store.edit { it[aSeen] = v.joinToString("\n") } }
 
+    // Writers whose articles are hidden everywhere (display names, one per line).
+    private val blockedKey = stringPreferencesKey("blocked_authors")
+    val blockedAuthors: Flow<List<String>> = ctx.store.data.map { it[blockedKey]?.split('\n')?.filter(String::isNotBlank) ?: emptyList() }
+    suspend fun setBlockedAuthors(v: List<String>) { ctx.store.edit { it[blockedKey] = v.joinToString("\n") } }
+
     private val updChecked = longPreferencesKey("update_checked_at")
     val updateCheckedAt: Flow<Long> = ctx.store.data.map { it[updChecked] ?: 0L }
     suspend fun setUpdateCheckedAt(v: Long) { ctx.store.edit { it[updChecked] = v } }

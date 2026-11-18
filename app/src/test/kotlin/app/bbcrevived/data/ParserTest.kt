@@ -45,6 +45,15 @@ class ParserTest {
         assertEquals("UK weather: Is any more snow on the way?", ArticleParser.meta(html).title)
     }
 
+    @Test fun bylineAndDates() {
+        val a = ArticleParser.info(fx("article.html"))
+        assertEquals(listOf(Author("Jenna Moon", null)), a.authors)
+        assertEquals("2026-11-15T12:31:20.163Z", a.published)
+        assertEquals("2026-11-15T13:31:39.301Z", a.updated)
+        // Trailing space in BBC's data is trimmed; role kept.
+        assertEquals(listOf(Author("Simon King", "Lead Weather Presenter")), ArticleParser.byline(fx("weather.html")))
+    }
+
     @Test fun pageMetaUsesOpenGraph() {
         val m = ArticleParser.meta(fx("video.html"))
         assertEquals("Watch: What's in the Milburn review?", m.title)

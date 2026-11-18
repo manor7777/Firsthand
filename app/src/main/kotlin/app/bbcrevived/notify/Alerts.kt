@@ -104,6 +104,9 @@ class BreakingWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(c
             val kws = follows.filter(Categories::isKeyword).map { it.removePrefix(Categories.KW).lowercase() }
             candidates = candidates.filter { s -> s.url in urls || kws.any { (s.title + " " + s.summary).lowercase().contains(it) } }
         }
+        // Never alert about articles by a blocked writer (or co-written by one).
+        val blocked = prefs.blockedAuthors.first().map({ app.bbcrevived.data.Author.key(it) }).toSet()
+        if (blocked.isNotEmpty()) candidates = candidates.filterNot { s -> repo.byline(s.url).any { app.bbcrevived.data.Author.key(it.name) in blocked } }
 
         val seen = prefs.alertSeen.first()
         val fresh = candidates.filter { it.url !in seen }

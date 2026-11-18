@@ -29,7 +29,7 @@ import app.bbcrevived.update.UpdateChecker
 fun SettingsScreen(
     accent: String, mode: String,
     onAccent: (String) -> Unit, onMode: (String) -> Unit,
-    exportJson: () -> String, importJson: (String) -> Boolean, alerts: AlertState, updates: UpdateUi, onBack: () -> Unit,
+    exportJson: () -> String, importJson: (String) -> Boolean, alerts: AlertState, updates: UpdateUi, blocked: BlockedUi, onBack: () -> Unit,
 ) {
     val ctx = LocalContext.current
     var status by remember { mutableStateOf<String?>(null) }
@@ -136,8 +136,19 @@ fun SettingsScreen(
                 is UpdateState.Error -> { Text(u.message, color = MaterialTheme.colorScheme.error); OutlinedButton(updates.check) { Text("Try again") } }
             }
             updates.installResult?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+            Heading("Blocked writers")
+            if (blocked.names.isEmpty()) Text("None. Block a writer from their page (tap their name under a headline).", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            else {
+                Text("Articles they wrote or co-wrote are hidden everywhere.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                blocked.names.forEach { n ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(n, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                        OutlinedButton({ blocked.unblock(n) }) { Text("Unblock") }
+                    }
+                }
+            }
             Heading("Backup")
-            Text("Export your followed topics, keywords, theme and accent to a file, or restore them from one.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Export your followed topics, writers, keywords, blocked writers, theme and accent to a file, or restore them from one.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button({ export.launch("bbc-revived-settings.json") }) { Text("Export") }
                 OutlinedButton({ import.launch(arrayOf("application/json", "text/*", "*/*")) }) { Text("Import") }
@@ -169,6 +180,8 @@ private fun Swatch(label: String, color: Color?, selected: Boolean, onClick: () 
 }
 
 @Composable private fun BackHandlerCompat(onBack: () -> Unit) = androidx.activity.compose.BackHandler(onBack = onBack)
+
+class BlockedUi(val names: List<String>, val unblock: (String) -> Unit)
 
 class UpdateUi(
     val installedName: String, val state: UpdateState, val installResult: String?,

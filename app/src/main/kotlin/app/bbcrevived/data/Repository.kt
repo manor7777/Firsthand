@@ -7,11 +7,17 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.sync.withPermit
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
 /** Fetches feeds/pages with a tiny disk cache so the app works offline (stale content shown on failure). */
 class Repository(ctx: Context) {
+    companion object {
+        /** Bylines of articles read this session (url -> story, writers), so author pages include them instantly. */
+        private val read = java.util.concurrent.ConcurrentHashMap<String, Pair<Story, List<Author>>>()
+    }
+
     private val client = OkHttpClient()
     private val dir = File(ctx.cacheDir, "http").apply { mkdirs() }
     private val ua = "Mozilla/5.0 (Android) BBCRevived/personal"
@@ -66,9 +72,34 @@ class Repository(ctx: Context) {
         ArticleParser.pickTopic(topics, term)
     }
 
+    /**
+     * Articles by a writer. BBC has no author pages, so: search BBC for the name, open the top results (disk-cached)
+     * and keep the ones whose byline credits them, plus anything by them already read in the app. Newest first.
+     */
+    suspend fun authorStories(name: String): List<Story> = coroutineScope {
+        val want = Author.key(name)
+        val already = read.values.filter { (_, a) -> a.any { Author.key(it.name) == want } }.map { it.first }
+        val candidates = search(name).filter { DeepLinks.parse(it.url) is DeepLinks.Link.Article }.take(15)
+        val verified = candidates.map { s ->
+            async { s.takeIf { runCatching { ArticleParser.byline(get(s.url)) }.getOrDefault(emptyList()).any { Author.key(it.name) == want } } }
+        }.mapNotNull { it.await() }
+        (verified + already).distinctBy { it.url }.sortedByDescending { it.publishedMillis }
+    }
+
+    /** The byline of one article (empty if none/unreadable). */
+    suspend fun byline(url: String): List<Author> = runCatching { ArticleParser.byline(get(url)) }.getOrDefault(emptyList())
+
+    /** Bylines for many articles, a few at a time (disk-cached), reported as each one arrives. */
+    suspend fun bylines(urls: List<String>, onEach: (String, List<Author>) -> Unit) = coroutineScope {
+        val gate = kotlinx.coroutines.sync.Semaphore(6)
+        urls.map { u -> async { gate.withPermit { runCatching { ArticleParser.byline(get(u)) }.getOrNull()?.let { onEach(u, it) } } } }
+            .forEach { it.await() }
+    }
+
     /** Stories for one followed item: catalogue feed, BBC topic feed, or keyword search. */
     suspend fun followStories(f: String): List<Story> = when {
         Categories.isKeyword(f) -> search(f.removePrefix(Categories.KW))
+        Categories.isAuthor(f) -> authorStories(Categories.authorName(f))
         Categories.isTopic(f) -> runCatching { RssParser.parse(get(Categories.topicFeed(Categories.topicId(f))), Categories.topicName(f)) }.getOrDefault(emptyList())
         else -> category(f)
     }
@@ -79,7 +110,9 @@ class Repository(ctx: Context) {
 
     suspend fun article(story: Story): ArticleContent = runCatching {
         val html = get(story.url)
-        ArticleContent(ArticleParser.parse(html, story.url), ArticleParser.topics(html))
+        val info = ArticleParser.info(html)
+        if (info.authors.isNotEmpty()) read[story.url] = story to info.authors
+        ArticleContent(ArticleParser.parse(html, story.url), ArticleParser.topics(html), info)
     }.getOrDefault(ArticleContent(emptyList(), emptyList()))
 
     /** A story for a tapped BBC link: headline/summary/image from the page, or a bare placeholder if it can't be read in time. */

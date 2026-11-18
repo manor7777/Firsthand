@@ -48,7 +48,7 @@ private sealed interface Play {
 
 /** Native video page: player on top, then headline, write-up and topics. Playback stops when swiped away. */
 @Composable
-fun VideoPage(s: Story, support: VideoSupport, visible: Boolean, follows: List<String>, onToggleFollow: (String) -> Unit) {
+fun VideoPage(s: Story, support: VideoSupport, visible: Boolean, follows: List<String>, onTopic: (app.bbcrevived.data.TopicRef) -> Unit) {
     val loaded = support.videos.containsKey(s.url)
     val info = support.videos[s.url]
     var play by remember(s.url) { mutableStateOf<Play>(Play.Idle) }
@@ -92,7 +92,7 @@ fun VideoPage(s: Story, support: VideoSupport, visible: Boolean, follows: List<S
         }
         if (info != null) items(info.summary) { BlockView(it) }
         else if (loaded && s.summary.isNotBlank()) item { Text(s.summary, Modifier.padding(horizontal = 20.dp, vertical = 6.dp), style = MaterialTheme.typography.bodyLarge) }
-        if (!info?.topics.isNullOrEmpty()) item { TopicChips(info!!.topics, follows, onToggleFollow) }
+        if (!info?.topics.isNullOrEmpty()) item { TopicChips(info!!.topics, follows, onTopic) }
     }
 }
 

@@ -101,9 +101,16 @@ object Categories {
     fun topicName(f: String) = f.substringAfter('|')
     fun topicFollow(id: String, name: String) = "$TOPIC$id|$name"
     fun topicFeed(id: String) = "https://feeds.bbci.co.uk/news/topics/$id/rss.xml"
-    fun isValid(f: String) = f in feeds || isKeyword(f) || (isTopic(f) && topicId(f).matches(Regex("[a-z0-9]{6,20}")))
+    /** Followed writers are stored as "author:<Name>" (stories found via BBC search, kept only if their byline matches). */
+    const val AUTHOR = "author:"
+    fun isAuthor(f: String) = f.startsWith(AUTHOR)
+    fun authorName(f: String) = f.removePrefix(AUTHOR)
+    fun authorFollow(name: String) = AUTHOR + name.trim().replace(Regex("\\s+"), " ")
+    fun isValid(f: String) = f in feeds || isKeyword(f) || (isTopic(f) && topicId(f).matches(Regex("[a-z0-9]{6,20}"))) ||
+        (isAuthor(f) && authorName(f).length in 2..80 && '\n' !in f)
     fun label(f: String) = when {
         isKeyword(f) -> "“${f.removePrefix(KW)}”"
+        isAuthor(f) -> "by ${authorName(f)}"
         isTopic(f) -> topicName(f)
         else -> f
     }
@@ -121,7 +128,21 @@ data class LivePost(
 )
 
 data class TopicRef(val id: String, val name: String)
-data class ArticleContent(val blocks: List<Block>, val topics: List<TopicRef>)
+/** A credited writer from the article's byline. BBC publishes no author ID or page, only name and role. */
+data class Author(val name: String, val role: String?) {
+    companion object {
+        /** Comparable form of a name: "Simon King " and "simon  king" are the same person. */
+        fun key(name: String) = name.trim().lowercase().replace(Regex("\\s+"), " ")
+    }
+}
+
+/** Byline and dates of an article (ISO-8601 instants), shown under the headline. */
+data class ArticleInfo(val authors: List<Author>, val published: String?, val updated: String?)
+
+data class ArticleContent(
+    val blocks: List<Block>, val topics: List<TopicRef>,
+    val info: ArticleInfo = ArticleInfo(emptyList(), null, null),
+)
 
 /** A BBC /news/videos page: the clip's version ID (for BBC's media selector) plus its text. */
 data class VideoInfo(
