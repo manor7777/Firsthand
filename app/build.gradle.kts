@@ -9,11 +9,11 @@ plugins {
 val buildNumber = (project.findProperty("buildNumber") as String?)?.toIntOrNull() ?: 1
 
 android {
-    namespace = "app.bbcrevived"
+    namespace = "app.firsthand"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "app.bbcrevived"
+        applicationId = "app.firsthand"
         minSdk = 31
         targetSdk = 35
         versionCode = buildNumber
@@ -67,6 +67,8 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.5.1")
     implementation("dev.chrisbanes.haze:haze:1.0.2")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // Reads article text from non-BBC publishers' pages (MIT).
+    implementation("org.jsoup:jsoup:1.18.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     debugImplementation("androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")

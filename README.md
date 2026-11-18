@@ -2,17 +2,28 @@
 
 A private, sideloaded Android news reader built on BBC News content, with Kotlin, Jetpack Compose and Material You.
 
-> **Formerly BBC Revived.** The project moved from `manor7777/BBC-Revived` to `manor7777/Firsthand`. The Android package ID is still `app.bbcrevived` on purpose, so existing installs update in place instead of installing as a second app. Settings > Updates now follows this repo. Version numbers continue from the old repo (see *Releasing*).
+> **Formerly BBC Revived.** The project moved from `manor7777/BBC-Revived` to `manor7777/Firsthand`, and the Android package ID changed from `app.bbcrevived` to `app.firsthand`. Android treats a new package ID as a different app, so it installs next to the old one rather than updating it: export your settings from the old app (Settings > Backup), install Firsthand, import them, then uninstall the old one. From here on, updates come from this repo. Version numbers continue from the old repo (see *Releasing*).
 
 ## Features
-- Native reader for BBC News articles, live pages and videos (HLS playback in-app), plus Weather and Sport articles.
+- **News sources.** BBC News plus any publisher that offers RSS: a built-in list (Example Post and the other Reach titles, Guardian, Sky News, Independent, Mail, Metro, Al Jazeera, NPR, NYT and more) or any feed address you paste in. Add and remove them in **Settings > News sources**; each source's sections appear in My News under its name.
+- **BBC News is optional.** Switch it off in Settings > News sources and nothing from the BBC is shown or loaded (Home becomes a "For you" page built from your sources). Your BBC topics are kept and come back when you switch it on.
+- Native reader for articles, live pages and videos (BBC: HLS playback in-app), plus BBC Weather and Sport articles. Other publishers' stories are shown as readable text, with a button to open the original if a page can't be read.
+- **Writers.** Credited writers are tappable on BBC and added sources alike: open their page, follow them, or block them (their articles, including co-written ones, are hidden everywhere and from alerts). For added sources, a writer's page lists their stories from the feeds you follow.
+- Follows: topics, sections, writers and keywords appear in *My News* and *For you*.
 - Opens BBC links from other apps and Google share links (see below); *Share > Firsthand* works from any app.
-- Follows: topics and writers appear in *My News* and *For you*. Tap a byline for a writer page, a topic tag for a topic page.
-- Block writers: their articles, including co-written ones, are hidden from lists and alerts.
-- Live BBC search, and breaking-news alerts (background checks, optional follows-only filter).
-- Settings export/import (`firsthand-settings.json`) and in-app updates from GitHub Releases.
+- Live BBC search, and breaking-news alerts for BBC News (see *Alerts*).
+- Settings export/import (`firsthand-settings.json`, includes your sources) and in-app updates from GitHub Releases.
 
-**Unofficial.** This project is not affiliated with, endorsed by or sponsored by the BBC. It uses its own icon, ships no BBC logos, and is never published. Content is fetched from the BBC's public feeds and pages for personal use only.
+## How it gets the news
+There is no Firsthand server and no account: the app fetches everything itself, straight from the publishers.
+- **RSS is the backbone.** Every added source is just an RSS (or Atom) feed. Each story's headline, summary, picture, time and credited writers come from the feed. Reach titles (Example Post etc.) serve any section as a feed by adding `?service=rss` to the section's address, which is how their sections are listed. Where a feed includes the full article text it is used directly; otherwise the story's page is fetched when you open it and the article text is read from it (no per-site rules, so odd layouts may fall back to the summary and an *Open original* button).
+- **BBC News** uses its public RSS feeds for sections and topics, plus the data embedded in bbc.co.uk pages for the Breaking / Most read lists, articles, live pages and videos, and BBC search for keywords and writer pages. BBC has no writer pages or breaking-news feed, so writer pages are built from search results that really credit the writer.
+- Everything fetched is cached on the phone so it still opens offline.
+
+## Alerts
+Breaking-news alerts cover BBC News only. Without a server to push them, the app checks on a schedule. It arms an Android alarm that is allowed to fire while the phone is idle, then runs an expedited background check; WorkManager's periodic job stays as a backup, and a reboot or app update re-arms the alarm. This does not need battery optimisation turned off, but Android can still hold a check back a few minutes while the phone sleeps: setting the app's battery use to *Unrestricted* is the most prompt, and truly instant delivery would need a push server.
+
+**Unofficial.** This project is not affiliated with, endorsed by or sponsored by the BBC. It uses its own icon, ships no BBC logos, and is never published. Content is fetched from the BBC's and your chosen publishers' public feeds and pages for personal use only. Not affiliated with or endorsed by any publisher.
 
 Builds: every push runs GitHub Actions and uploads an APK artifact (`versionName 0.1.<build number>`).
 
@@ -29,4 +40,4 @@ Android 12+ never auto-routes unverified web links to an app, and BBC's domains 
 Keep the keystore safe and out of the repo: losing it means reinstalling once.
 
 ## Licence and FOSS compliance
-GPL-3.0-or-later (see `LICENSE`). Every dependency is FOSS (AndroidX, Kotlin, kotlinx.serialization, OkHttp, Coil, Haze: Apache-2.0). No Google Play Services, analytics, ads, crash reporters or proprietary binaries; the APK embeds no dependency-info blob. BBC content is not covered by this licence and is not bundled.
+GPL-3.0-or-later (see `LICENSE`). Every dependency is FOSS (AndroidX, Kotlin, kotlinx.serialization, OkHttp, Coil, Haze: Apache-2.0; jsoup: MIT). No Google Play Services, analytics, ads, crash reporters or proprietary binaries; the APK embeds no dependency-info blob. BBC and other publishers' content is not covered by this licence and is not bundled.
