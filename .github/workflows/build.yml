@@ -12,15 +12,18 @@ on:
 permissions:
   contents: write
 
-env:
-  # Firsthand's run numbers restart at 1, so offset them above the BBC-Revived builds already installed.
-  BUILD_NUMBER: ${{ github.run_number + (github.repository == 'manor7777/Firsthand' && 100 || 0) }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Build number
+        run: |
+          # Firsthand's run numbers restart at 1, so offset them above the BBC-Revived builds already installed.
+          n=${{ github.run_number }}
+          [ "${{ github.repository }}" = "manor7777/Firsthand" ] && n=$((n + 100))
+          echo "BUILD_NUMBER=$n" >> "$GITHUB_ENV"
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
       - uses: gradle/actions/setup-gradle@v4
