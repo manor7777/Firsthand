@@ -10,6 +10,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.sync.withPermit
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import app.firsthand.platform.WebFetch
 
 /** Fetches feeds/pages with a tiny disk cache so the app works offline (stale content shown on failure). */
 class Repository(ctx: Context) {
@@ -21,17 +22,28 @@ class Repository(ctx: Context) {
     private val client = OkHttpClient()
     private val dir = File(ctx.cacheDir, "http").apply { mkdirs() }
     private val ua = "Mozilla/5.0 (Android) Firsthand/personal"
+    private val appCtx = ctx.applicationContext
+    /** What a mainstream mobile browser sends (with our name on the end). Some publishers refuse unknown agents. */
+    private val browserUa = "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 Firsthand/personal"
 
-    private suspend fun get(url: String): String = withContext(Dispatchers.IO) {
+    private suspend fun get(url: String, agent: String = ua): String = withContext(Dispatchers.IO) {
         val f = File(dir, url.hashCode().toString())
         try {
-            val req = Request.Builder().url(url).header("User-Agent", ua).build()
-            client.newCall(req).execute().use { r ->
-                check(r.isSuccessful) { "HTTP ${r.code}" }
-                r.body!!.string().also { f.writeText(it) }
-            }
+            fetch(url, agent).also { f.writeText(it) }
         } catch (e: Exception) {
             if (f.exists()) f.readText() else throw e
+        }
+    }
+
+    /** One request. A site that answers 401/403/406 to our own agent is asked again as a browser would (feeds included). */
+    private fun fetch(url: String, agent: String): String {
+        val req = Request.Builder().url(url).header("User-Agent", agent).build()
+        return client.newCall(req).execute().use { r ->
+            if (!r.isSuccessful) {
+                if (r.code in setOf(401, 403, 406) && agent == ua) return@use fetch(url, browserUa)
+                error("HTTP ${r.code}")
+            }
+            r.body!!.string()
         }
     }
 
@@ -125,6 +137,15 @@ class Repository(ctx: Context) {
     }
 
     /** A story from an added source: the feed's own full text if it has one, else the page's article text. Writers come from the feed. */
+    private fun renderedFile(url: String) = File(dir, url.hashCode().toString() + ".web")
+    private suspend fun parsePage(html: String, story: Story) = withContext(Dispatchers.Default) { ExternalArticle.parse(html, story.url, story.source) }
+
+    /**
+     * A story from an added source (BBC aside, every source goes through here, feeds added by address included). The text comes from,
+     * in order: the feed's own full text; the page fetched as a mainstream mobile browser would; and, if the site refused that or
+     * sent back no article (bot checks, script-built pages), the page loaded in a hidden in-app browser. Text found that way is
+     * kept, so the story opens instantly next time. Offline never triggers the browser. Writers come from the feed.
+     */
     private suspend fun externalArticle(story: Story): ArticleContent {
         val published = story.publishedMillis.takeIf { it > 0 }?.let { java.time.Instant.ofEpochMilli(it).toString() }
         val fallback = ArticleContent(emptyList(), emptyList(), ArticleInfo(story.authors, published, null))
@@ -132,11 +153,32 @@ class Repository(ctx: Context) {
             var blocks = story.contentHtml?.let { withContext(Dispatchers.Default) { ExternalArticle.blocks(it, story.url) } }.orEmpty()
             var authors = story.authors; var pub = published; var upd: String? = null
             if (!ExternalArticle.readable(blocks)) {
-                val page = get(story.url)
-                val p = withContext(Dispatchers.Default) { ExternalArticle.parse(page, story.url, story.source) }
-                blocks = p.blocks
-                if (authors.isEmpty()) authors = p.authors
-                p.published?.let { pub = it }; upd = p.updated
+                var parsed: ExternalArticle.Parsed? = null
+                val kept = renderedFile(story.url).takeIf { it.exists() }?.readText()
+                if (kept != null) parsed = parsePage(kept, story)
+                var needBrowser = false
+                if (parsed == null || parsed.blocks.isEmpty()) {
+                    var page: String? = null
+                    try { page = get(story.url, browserUa) }
+                    catch (e: kotlinx.coroutines.CancellationException) { throw e }
+                    catch (e: IllegalStateException) { needBrowser = true } // the site answered, but refused (HTTP error)
+                    catch (e: Exception) { /* no connection: a hidden browser would not help */ }
+                    if (page != null) { parsed = parsePage(page, story); if (parsed.blocks.isEmpty()) needBrowser = true }
+                }
+                if ((parsed == null || parsed.blocks.isEmpty()) && needBrowser) {
+                    val html = WebFetch.html(appCtx, story.url)
+                    if (html != null) {
+                        val p = parsePage(html, story)
+                        if (p.blocks.isNotEmpty()) { runCatching { renderedFile(story.url).writeText(html.take(3_000_000)) }; parsed = p }
+                        else if (parsed == null) parsed = p
+                    }
+                }
+                val p = parsed
+                if (p != null) {
+                    blocks = p.blocks
+                    if (authors.isEmpty()) authors = p.authors
+                    p.published?.let { pub = it }; upd = p.updated
+                }
             }
             ArticleContent(blocks, emptyList(), ArticleInfo(authors, pub, upd))
         }.getOrDefault(fallback)
