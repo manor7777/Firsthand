@@ -58,7 +58,7 @@ object Alerts {
     /** Runs a check right now as expedited work (allowed to start promptly even in Doze), once at a time. */
     fun checkNow(ctx: Context) {
         val req = OneTimeWorkRequestBuilder<BreakingWorker>()
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_IF_QUOTA_EXCEEDED)
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .build()
         WorkManager.getInstance(ctx).enqueueUniqueWork(WORK_NOW, ExistingWorkPolicy.KEEP, req)
