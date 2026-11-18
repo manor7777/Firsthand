@@ -59,18 +59,20 @@ fun StoryCard(s: Story, big: Boolean, rank: Int? = null, onClick: () -> Unit) {
 }
 
 @Composable
-@OptIn(ExperimentalLayoutApi::class)
 private fun Titles(s: Story, style: androidx.compose.ui.text.TextStyle) {
     Text(s.title, style = style, fontWeight = FontWeight.SemiBold, maxLines = 4, overflow = TextOverflow.Ellipsis)
     Spacer(Modifier.height(6.dp))
     // Pills say what and who: BREAKING / LIVE when flagged, then the source on every story ("BBC News", "Example Post"),
-    // then the section and age as plain text. It wraps instead of squeezing when a source name is long.
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+    // then the section and age as plain text, which gives way (ellipsis) when the row is full.
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         if (s.breaking) Pill("BREAKING", MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
         if (s.isLive) Pill("LIVE", MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
         Pill(s.sourceName, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
         val rest = listOf(s.sectionName, ago(s.publishedMillis)).filter { it.isNotEmpty() }.joinToString(" · ")
-        if (rest.isNotEmpty()) Text(rest, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (rest.isNotEmpty()) Text(
+            rest, Modifier.weight(1f, fill = false), style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
