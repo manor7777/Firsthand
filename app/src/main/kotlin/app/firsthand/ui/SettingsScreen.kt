@@ -67,7 +67,7 @@ fun SettingsScreen(
             key(tab) { // each tab opens scrolled to the top
                 Column(
                     Modifier.fillMaxSize().haze(hz).verticalScroll(rememberScrollState()).padding(horizontal = 18.dp)
-                        .padding(top = topInset + headerH + 8.dp, bottom = 32.dp).navigationBarsPadding(),
+                        .padding(top = topInset + headerH + 8.dp, bottom = 32.dp).windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars)),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
                     when (tab) {

@@ -64,7 +64,7 @@ fun GlassDock(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp).windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars)).animateContentSize(),
+        modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp).windowInsetsPadding(if (searching) WindowInsets.ime.union(WindowInsets.navigationBars) else WindowInsets.navigationBars).animateContentSize(),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

@@ -115,7 +115,7 @@ fun HomeScreen(
         ) {
             LazyColumn(
                 Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = top + headerH, bottom = 130.dp),
+                contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = top + headerH, bottom = 110.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 if (mode == 1) {
@@ -161,8 +161,8 @@ fun MyNewsEditor(hz: HazeState, selected: List<String>, sources: List<Source>, b
     fun move(i: Int, d: Int) = onChange(selected.toMutableList().also { it.add(i + d, it.removeAt(i)) })
 
     LazyColumn(
-        Modifier.fillMaxSize().haze(hz),
-        contentPadding = PaddingValues(18.dp, top + 16.dp, 18.dp, 130.dp),
+        Modifier.fillMaxSize().imePadding().haze(hz),
+        contentPadding = PaddingValues(18.dp, top + 16.dp, 18.dp, 110.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
@@ -273,7 +273,7 @@ fun MyNewsScreen(
         }
         LazyColumn(
             Modifier.fillMaxSize().haze(hz),
-            contentPadding = PaddingValues(14.dp, 8.dp, 14.dp, 130.dp),
+            contentPadding = PaddingValues(14.dp, 8.dp, 14.dp, 110.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             val shown = if (active != null) listOf(active) else groups

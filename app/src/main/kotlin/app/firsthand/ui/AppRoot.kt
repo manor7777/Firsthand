@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxSize
@@ -113,8 +114,10 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
                 else -> HomeScreen(hz, home.breaking, home.mostRead, forYou, bbcOn, tab == Tab.Breaking, refreshing, vm::refresh, open)
             }
         }
-        // While searching the bar rides above the keyboard, so the fade does too, and it is only as tall as the bar needs.
-        EdgeScrim(hz, atTop = false, Modifier.align(Alignment.BottomCenter).then(if (searching) Modifier.imePadding().height(110.dp) else Modifier.height(WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 150.dp)))
+        // The fade behind the bar: just taller than the bar. While the keyboard is up the bar rides above it, and so does the fade.
+        val imeUp = searching && WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
+        EdgeScrim(hz, atTop = false, Modifier.align(Alignment.BottomCenter).then(
+            if (imeUp) Modifier.imePadding().height(120.dp) else Modifier.height(WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 120.dp)))
         GlassDock(
             hz, tabs, tab, searching, query,
             onTab = { picked = it }, onSearch = { searching = true }, onSettings = { settingsOpen = true },
