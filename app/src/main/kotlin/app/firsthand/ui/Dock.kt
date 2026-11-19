@@ -29,6 +29,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
@@ -91,11 +92,21 @@ fun GlassDock(
             var dragX by remember { mutableFloatStateOf(0f) }
             var barW by remember { mutableIntStateOf(0) }
             var quietUntil by remember { mutableLongStateOf(0L) } // a press-and-hold that ends without a drag must not also count as a tap
-            val itemW = if (work.isEmpty()) 1f else barW.toFloat() / work.size
-            fun finish() { dragging = null; dragX = 0f; quietUntil = android.os.SystemClock.uptimeMillis() + 350; if (work != items) onReorder(work) }
+            // The drag handlers live as long as their button does, so they must read the latest values, not the ones from when they started.
+            val itemW by rememberUpdatedState(if (work.isEmpty() || barW == 0) 1f else barW.toFloat() / work.size)
+            val savedItems by rememberUpdatedState(items)
+            val save by rememberUpdatedState(onReorder)
+            fun finish() { dragging = null; dragX = 0f; quietUntil = android.os.SystemClock.uptimeMillis() + 350; if (work != savedItems) save(work) }
+            // While dragging, the highlight sits under the selected button (following the finger if that is the one being dragged)
+            // instead of springing to its slot a beat late.
+            val slot = work.indexOf(tab).coerceAtLeast(0)
+            val target = if (dragging == tab) slot + dragX / itemW else slot.toFloat()
+            val follow by androidx.compose.animation.core.animateFloatAsState(
+                target, if (dragging == tab) androidx.compose.animation.core.snap() else androidx.compose.animation.core.tween(140), label = "follow",
+            )
             SlidingPill(
-                hz, work.size, work.indexOf(tab).coerceAtLeast(0), Modifier.weight(1f).onSizeChanged { barW = it.width },
-                height = 64.dp, keys = work.map { it.id },
+                hz, work.size, slot, Modifier.weight(1f).onSizeChanged { barW = it.width },
+                height = 64.dp, keys = work.map { it.id }, position = if (dragging != null) follow else null,
             ) { i, sel ->
                 val t = work[i]
                 val lifted = dragging == t
@@ -110,12 +121,16 @@ fun GlassDock(
                                 onDrag = { change, amount ->
                                     change.consume()
                                     dragX += amount.x
-                                    val at = work.indexOf(t)
-                                    if (dragX > itemW / 2 && at < work.lastIndex) {
-                                        work = work.toMutableList().also { l -> l.add(at + 1, l.removeAt(at)) }; dragX -= itemW
-                                        view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
-                                    } else if (dragX < -itemW / 2 && at > 0) {
-                                        work = work.toMutableList().also { l -> l.add(at - 1, l.removeAt(at)) }; dragX += itemW
+                                    // Swap with the neighbour each time the button is dragged past half its width (several, if the finger is quick).
+                                    while (true) {
+                                        val at = work.indexOf(t)
+                                        val to = when {
+                                            dragX > itemW / 2 && at < work.lastIndex -> at + 1
+                                            dragX < -itemW / 2 && at > 0 -> at - 1
+                                            else -> break
+                                        }
+                                        work = work.toMutableList().also { l -> l.add(to, l.removeAt(at)) }
+                                        dragX += if (to > at) -itemW else itemW
                                         view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
                                     }
                                 },

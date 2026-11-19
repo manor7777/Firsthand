@@ -115,9 +115,12 @@ fun SlidingPill(
     height: androidx.compose.ui.unit.Dp = 56.dp,
     /** Stable identity per item, so an item keeps its state (and an ongoing drag) when the items are reordered. */
     keys: List<Any>? = null,
+    /** Where the highlight is, in item slots (fractions allowed), overriding the spring: used while an item is being dragged. */
+    position: Float? = null,
     item: @Composable RowScope.(index: Int, selected: Boolean) -> Unit,
 ) {
-    val frac by animateFloatAsState(selected.toFloat(), spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow), label = "pill")
+    val springPos by animateFloatAsState(selected.toFloat(), spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow), label = "pill")
+    val frac = position ?: springPos
     // A quiet frosted highlight, not a solid accent block: lighter glass inside the bar.
     val hi = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.13f)
     val edge = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
