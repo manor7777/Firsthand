@@ -121,7 +121,7 @@ fun SlidingPill(
     val edge = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
     val pad = with(androidx.compose.ui.platform.LocalDensity.current) { 5.dp.toPx() }
     Row(
-        modifier.heightIn(min = height).glass(hz).drawBehind {
+        modifier.defaultMinSize(minHeight = height).height(androidx.compose.foundation.layout.IntrinsicSize.Min).glass(hz).drawBehind {
             val w = size.width / count
             val o = Offset(frac * w + pad, pad); val sz = Size(w - 2 * pad, size.height - 2 * pad)
             drawRoundRect(hi, o, sz, CornerRadius(size.height))
