@@ -94,13 +94,11 @@ private fun SectionLabel(t: String) =
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    hz: HazeState, breaking: List<Story>, mostRead: List<Story>, forYou: List<Story>, bbcOn: Boolean, breakingFirst: Boolean,
-    refreshing: Boolean, onRefresh: () -> Unit, onOpen: (List<Story>, Int) -> Unit, onSettings: () -> Unit,
+    hz: HazeState, breaking: List<Story>, mostRead: List<Story>, forYou: List<Story>, bbcOn: Boolean, breakingPage: Boolean,
+    refreshing: Boolean, onRefresh: () -> Unit, onOpen: (List<Story>, Int) -> Unit, onSearch: () -> Unit, onSettings: () -> Unit,
 ) {
-    // Pill order is For you (0), Breaking (1); the Settings choice only decides which one is open at first.
-    var picked by rememberSaveable { mutableStateOf<Int?>(null) }
-    val mode = if (bbcOn) (picked ?: if (breakingFirst) 1 else 0) else 0 // without BBC there is no Breaking page: Home is just For you
-    val headerH = if (bbcOn) 140.dp else 84.dp // title row (+ the Breaking / For you pill when BBC is on) and its fade
+    val mode = if (bbcOn && breakingPage) 1 else 0 // 1 = Breaking; without BBC there is no Breaking page
+    val headerH = 140.dp // title row, search box and the fade under them
     val view = LocalView.current
     val state = rememberPullToRefreshState()
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -141,12 +139,7 @@ fun HomeScreen(
         EdgeScrim(hz, atTop = true, Modifier.align(Alignment.TopCenter).height(top + headerH))
         Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(top = top + 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             PageHeaderRow("Firsthand") { IconButton(onSettings) { Icon(Icons.Filled.Settings, "Settings") } }
-            if (bbcOn) SlidingPill(hz, 2, mode, Modifier.fillMaxWidth().padding(horizontal = 4.dp), height = 46.dp) { i, sel ->
-                Box(Modifier.weight(1f).fillMaxHeight().tap { picked = i; view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK) }, contentAlignment = Alignment.Center) {
-                    Text(if (i == 0) "For you" else "Breaking", fontWeight = FontWeight.SemiBold,
-                        color = if (sel) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
-                }
-            }
+            GlassSearchBox(hz, onSearch, Modifier.padding(horizontal = 4.dp))
         }
     }
 }
@@ -259,7 +252,7 @@ fun SearchScreen(
 @Composable
 fun MyNewsScreen(
     hz: HazeState, selected: List<String>, topics: Map<String, List<Story>>, sources: List<Source>, bbcOn: Boolean,
-    onChange: (List<String>) -> Unit, onOpen: (List<Story>, Int) -> Unit, onSettings: () -> Unit,
+    onChange: (List<String>) -> Unit, onOpen: (List<Story>, Int) -> Unit, onSearch: () -> Unit, onSettings: () -> Unit,
 ) {
     var editing by rememberSaveable { mutableStateOf(false) }
     var filter by rememberSaveable { mutableStateOf<String?>(null) } // null = all sections
@@ -276,6 +269,7 @@ fun MyNewsScreen(
             IconButton({ editing = true }) { Icon(Icons.Filled.Edit, "Edit My News") }
             IconButton(onSettings) { Icon(Icons.Filled.Settings, "Settings") }
         }
+        GlassSearchBox(hz, onSearch, Modifier.padding(horizontal = 16.dp).padding(bottom = 6.dp))
         androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             item { GlassChip(hz, active == null, "All") { filter = null } }
             items(groups, key = { it.key }) { g -> GlassChip(hz, active?.key == g.key, g.title) { filter = g.key } }

@@ -34,7 +34,7 @@ private sealed interface Screen {
 @Composable
 fun AppRoot(vm: AppViewModel = viewModel()) {
     val hz = remember { HazeState() }
-    var tab by rememberSaveable { mutableStateOf(Tab.Home) }
+    var picked by rememberSaveable { mutableStateOf<Tab?>(null) } // null until the user taps a tab: then the Settings choice decides
     var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
@@ -73,6 +73,8 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     val blockedTerms by vm.blockedTerms.collectAsStateWithLifecycle()
     val sources by vm.sources.collectAsStateWithLifecycle()
     val bbcOn by vm.bbcEnabled.collectAsStateWithLifecycle()
+    val tabs = tabOrder(homeDefault == "breaking", bbcOn)
+    val tab = picked?.takeIf { it in tabs } ?: tabs.first()
     val aBreaking by vm.alertBreaking.collectAsStateWithLifecycle()
     val aOff by vm.alertOffSources.collectAsStateWithLifecycle()
     val aCats by vm.alertCategories.collectAsStateWithLifecycle()
@@ -106,14 +108,14 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
             when {
                 searching -> SearchScreen(hz, query, pool, hits, vm::search, open)
-                tab == Tab.Home -> HomeScreen(hz, home.breaking, home.mostRead, forYou, bbcOn, homeDefault == "breaking", refreshing, vm::refresh, open) { settingsOpen = true }
-                else -> MyNewsScreen(hz, cats, topics, sources, bbcOn, vm::setCategories, open) { settingsOpen = true }
+                tab == Tab.MyNews -> MyNewsScreen(hz, cats, topics, sources, bbcOn, vm::setCategories, open, { searching = true }) { settingsOpen = true }
+                else -> HomeScreen(hz, home.breaking, home.mostRead, forYou, bbcOn, tab == Tab.Breaking, refreshing, vm::refresh, open, { searching = true }) { settingsOpen = true }
             }
         }
         EdgeScrim(hz, atTop = false, Modifier.align(Alignment.BottomCenter).height(WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 150.dp))
         GlassDock(
-            hz, tab, searching, query,
-            onTab = { tab = it }, onSearch = { searching = true },
+            hz, tabs, tab, searching, query,
+            onTab = { picked = it },
             onExit = { searching = false; query = "" }, onQuery = { query = it },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
