@@ -44,7 +44,7 @@ object RssParser {
                 summary = plain(summaryRaw),
                 url = url,
                 imageUrl = image(e, summaryRaw + html),
-                category = if (source != null) direct(e, "category").ifEmpty { category } else category,
+                category = if (source != null) direct(e, "category").ifEmpty { sectionFromUrl(url) ?: category } else category,
                 publishedMillis = parseDate(direct(e, "pubDate").ifEmpty { direct(e, "published").ifEmpty { direct(e, "updated").ifEmpty { direct(e, "dc:date") } } }),
                 isLive = source == null && "/live/" in url,
                 source = source,
@@ -71,6 +71,15 @@ object RssParser {
         while (n != null) { if (n is Element && n.tagName == tag) out += n; n = n.nextSibling }
         return out
     }
+
+    private val dated = Regex("^https?://[^/]+/([a-z][a-z0-9-]{1,30})/\\d{4}/\\d{1,2}/\\d{1,2}/")
+    private val shout = setOf("ai", "ml", "hpc", "os", "it", "uk", "us", "eu", "pc", "tv", "5g", "ev")
+
+    /** For feeds that tag nothing: the section in a dated article address ("/security/2026/11/18/..." is Security), or null. */
+    internal fun sectionFromUrl(url: String): String? =
+        dated.find(url)?.groupValues?.get(1)?.split('-')?.joinToString(" ") {
+            when { it == "and" -> "&"; it in shout -> it.uppercase(); else -> it.replaceFirstChar(Char::uppercase) }
+        }
 
     /** Topic tags: every <category> plus comma-separated <media:keywords>, deduplicated. */
     internal fun tags(e: Element): List<String> =

@@ -141,4 +141,15 @@ class TopicPickTest {
         assertNull(ArticleParser.pickTopic(topics, "boy"))
         assertNull(ArticleParser.pickTopic(topics, ""))
     }
+
+    @Test fun `untagged feeds take the section from a dated article address`() {
+        assertEquals("Security", RssParser.sectionFromUrl("https://www.example.com/security/2026/11/18/some-story/5310858"))
+        assertEquals("AI & ML", RssParser.sectionFromUrl("https://www.example.com/ai-and-ml/2026/11/18/x/1"))
+        assertEquals("HPC", RssParser.sectionFromUrl("https://www.example.com/hpc/2026/11/18/x/1"))
+        assertEquals("Personal Tech", RssParser.sectionFromUrl("https://www.example.com/personal-tech/2026/11/19/x/1"))
+        assertNull(RssParser.sectionFromUrl("https://www.example.com/story/12345"))
+        val xml = "<rss><channel><title>T</title><item><title>A</title><link>https://www.example.com/security/2026/11/18/a/1</link></item>" +
+            "<item><title>B</title><link>https://www.example.com/x/2</link></item></channel></rss>"
+        assertEquals(listOf("Security", "Front"), RssParser.parse(xml, "Front", "Example").map { it.category })
+    }
 }
