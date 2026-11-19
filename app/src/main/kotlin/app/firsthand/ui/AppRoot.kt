@@ -40,6 +40,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
     val accent by vm.accent.collectAsStateWithLifecycle()
     val mode by vm.themeMode.collectAsStateWithLifecycle()
+    val homeDefault by vm.homeDefault.collectAsStateWithLifecycle()
     val aOn by vm.alertEnabled.collectAsStateWithLifecycle()
     val aFollows by vm.alertOnlyFollows.collectAsStateWithLifecycle()
     val aMode by vm.alertMode.collectAsStateWithLifecycle()
@@ -104,7 +105,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
             when {
                 searching -> SearchScreen(hz, query, pool, hits, vm::search, open)
-                tab == Tab.Home -> HomeScreen(hz, home.breaking, home.mostRead, forYou, bbcOn, refreshing, vm::refresh, open) { settingsOpen = true }
+                tab == Tab.Home -> HomeScreen(hz, home.breaking, home.mostRead, forYou, bbcOn, homeDefault == "breaking", refreshing, vm::refresh, open) { settingsOpen = true }
                 else -> MyNewsScreen(hz, cats, topics, sources, bbcOn, vm::setCategories, open) { settingsOpen = true }
             }
         }
@@ -158,7 +159,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
             }
         }
         AnimatedVisibility(settingsOpen, enter = slideInHorizontally { it }, exit = slideOutHorizontally { it }) {
-            SettingsScreen(accent, mode, vm::setAccent, vm::setThemeMode, vm::exportJson, vm::importJson, alerts, updates,
+            SettingsScreen(accent, mode, homeDefault, vm::setAccent, vm::setThemeMode, vm::setHomeDefault, vm::exportJson, vm::importJson, alerts, updates,
                 BlockedUi(blocked, vm::unblockAuthor, blockedTerms, vm::addBlockedTerm, vm::removeBlockedTerm), SourcesUi(sources, vm::addSource, vm::addCustomSource, vm::removeSource, bbcOn, vm::setBbcEnabled)) { settingsOpen = false }
         }
     }

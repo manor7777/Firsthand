@@ -38,6 +38,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val themeMode = prefs.theme.stateIn(viewModelScope, SharingStarted.Eagerly, "system")
     fun setAccent(v: String) { viewModelScope.launch { prefs.setAccent(v) } }
     fun setThemeMode(v: String) { viewModelScope.launch { prefs.setTheme(v) } }
+    val homeDefault = prefs.homeDefault.stateIn(viewModelScope, SharingStarted.Eagerly, "foryou")
+    fun setHomeDefault(v: String) { viewModelScope.launch { prefs.setHomeDefault(v) } }
 
     /** Stored source entries and the publishers they stand for. BBC News is built in; these are the ones added in Settings. */
     private val sourceEntries = prefs.sources.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -189,11 +191,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val blockedTerms: List<String> = emptyList(),
         val alertBreaking: Boolean = true, val alertOffSources: List<String> = emptyList(), val alertCategories: List<String> = emptyList(),
         val alertKeywords: List<String> = emptyList(), val quietEnabled: Boolean = false, val quietStart: Int = 22, val quietEnd: Int = 7,
+        val homeDefault: String = "foryou",
     )
 
     fun exportJson(): String = kotlinx.serialization.json.Json { prettyPrint = true }
         .encodeToString(SettingsExport.serializer(), SettingsExport(1, follows.value, accent.value, themeMode.value, alertOnlyFollows.value, alertMode.value, alertInterval.value, blockedAuthors.value, sourceEntries.value, bbcEnabled.value, blockedTerms.value,
-            alertBreaking.value, alertOffSources.value, alertCategories.value, alertKeywords.value, quietEnabled.value, quietStart.value, quietEnd.value))
+            alertBreaking.value, alertOffSources.value, alertCategories.value, alertKeywords.value, quietEnabled.value, quietStart.value, quietEnd.value, homeDefault.value))
 
     /** Validates then applies an exported settings file. Returns false if it isn't one. */
     fun importJson(text: String): Boolean = runCatching {
@@ -212,6 +215,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             prefs.setAlertCategories(e.alertCategories.filter { it in Categories.sharedCategories }.distinct())
             prefs.setAlertKeywords(Blocking.parseAll(e.alertKeywords).map { it.line })
             prefs.setQuiet(e.quietEnabled, e.quietStart, e.quietEnd)
+            prefs.setHomeDefault(if (e.homeDefault == "breaking") "breaking" else "foryou")
             prefs.setBlockedTerms(Blocking.parseAll(e.blockedTerms).map { it.line })
             prefs.setSources(e.sources.filter { Sources.resolve(it) != null }.distinct())
             prefs.setBlockedAuthors(e.blockedAuthors.map(String::trim).filter { it.length in 2..80 }.distinctBy { Author.key(it) })

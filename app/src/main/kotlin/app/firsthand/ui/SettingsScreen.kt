@@ -38,8 +38,8 @@ import app.firsthand.data.Sources
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
-    accent: String, mode: String,
-    onAccent: (String) -> Unit, onMode: (String) -> Unit,
+    accent: String, mode: String, homeDefault: String,
+    onAccent: (String) -> Unit, onMode: (String) -> Unit, onHomeDefault: (String) -> Unit,
     exportJson: () -> String, importJson: (String) -> Boolean, alerts: AlertState, updates: UpdateUi, blocked: BlockedUi, sources: SourcesUi, onBack: () -> Unit,
 ) {
     val ctx = LocalContext.current
@@ -168,6 +168,13 @@ fun SettingsScreen(
                             FilterChip(mode == k, { onMode(k) }, { Text(l) })
                         }
                     }
+                    Heading("Open Home on")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("foryou" to "For you", "breaking" to "Breaking").forEach { (k, l) ->
+                            FilterChip(homeDefault == k, { onHomeDefault(k) }, { Text(l) })
+                        }
+                    }
+                    if (!sources.bbcOn) Text("Breaking is a BBC News page: with BBC News removed, Home is just For you.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Heading("Accent colour")
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Swatch("Wallpaper (Material You)", null, accent == "dynamic") { onAccent("dynamic") }

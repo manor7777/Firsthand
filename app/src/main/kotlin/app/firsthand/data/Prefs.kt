@@ -27,6 +27,10 @@ class Prefs(private val ctx: Context) {
     val theme: Flow<String> = ctx.store.data.map { it[themeKey] ?: "system" }
     suspend fun setAccent(v: String) { ctx.store.edit { it[accentKey] = v } }
     suspend fun setTheme(v: String) { ctx.store.edit { it[themeKey] = v } }
+    private val homeKey = stringPreferencesKey("home_default")
+    /** Which Home page opens first: "foryou" (default) or "breaking". */
+    val homeDefault: Flow<String> = ctx.store.data.map { it[homeKey] ?: "foryou" }
+    suspend fun setHomeDefault(v: String) { ctx.store.edit { it[homeKey] = v } }
 
     // Breaking-news alerts
     private val aEnabled = booleanPreferencesKey("alert_enabled")

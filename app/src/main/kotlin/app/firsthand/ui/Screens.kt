@@ -94,18 +94,19 @@ private fun SectionLabel(t: String) =
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    hz: HazeState, breaking: List<Story>, mostRead: List<Story>, forYou: List<Story>, bbcOn: Boolean,
+    hz: HazeState, breaking: List<Story>, mostRead: List<Story>, forYou: List<Story>, bbcOn: Boolean, breakingFirst: Boolean,
     refreshing: Boolean, onRefresh: () -> Unit, onOpen: (List<Story>, Int) -> Unit, onSettings: () -> Unit,
 ) {
-    var picked by rememberSaveable { mutableIntStateOf(0) }
-    val mode = if (bbcOn) picked else 1 // without BBC there is no Breaking page: Home is just For you
+    // Pill order is For you (0), Breaking (1); the Settings choice only decides which one is open at first.
+    var picked by rememberSaveable { mutableStateOf<Int?>(null) }
+    val mode = if (bbcOn) (picked ?: if (breakingFirst) 1 else 0) else 0 // without BBC there is no Breaking page: Home is just For you
     val headerH = if (bbcOn) 140.dp else 84.dp // title row (+ the Breaking / For you pill when BBC is on) and its fade
     val view = LocalView.current
     val state = rememberPullToRefreshState()
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     LaunchedEffect(state.distanceFraction >= 1f) { if (state.distanceFraction >= 1f) view.performHapticFeedback(HapticFeedbackConstants.CONFIRM) }
 
-    val flat = if (mode == 0) breaking.take(5) + mostRead.take(5) else forYou
+    val flat = if (mode == 1) breaking.take(5) + mostRead.take(5) else forYou
 
     Box(Modifier.fillMaxSize()) {
         PullToRefreshBox(
@@ -119,7 +120,7 @@ fun HomeScreen(
                 contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = top + headerH, bottom = 130.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                if (mode == 0) {
+                if (mode == 1) {
                     item { SectionLabel("Breaking now") }
                     itemsIndexed(breaking.take(5)) { i, s -> StoryCard(s, big = i == 0) { onOpen(flat, i) } }
                     item { SectionLabel("Most read") }
@@ -145,7 +146,7 @@ fun HomeScreen(
             }
             if (bbcOn) SlidingPill(hz, 2, mode, Modifier.fillMaxWidth(), height = 46.dp) { i, sel ->
                 Box(Modifier.weight(1f).fillMaxHeight().tap { picked = i; view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK) }, contentAlignment = Alignment.Center) {
-                    Text(if (i == 0) "Breaking" else "For you", fontWeight = FontWeight.SemiBold,
+                    Text(if (i == 0) "For you" else "Breaking", fontWeight = FontWeight.SemiBold,
                         color = if (sel) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
                 }
             }
