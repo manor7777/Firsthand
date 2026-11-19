@@ -139,12 +139,9 @@ fun HomeScreen(
             }
         }
         EdgeScrim(hz, atTop = true, Modifier.align(Alignment.TopCenter).height(top + headerH))
-        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = top + 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Firsthand", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                IconButton(onSettings) { Icon(Icons.Filled.Settings, "Settings") }
-            }
-            if (bbcOn) SlidingPill(hz, 2, mode, Modifier.fillMaxWidth(), height = 46.dp) { i, sel ->
+        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(top = top + 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            PageHeaderRow("Firsthand") { IconButton(onSettings) { Icon(Icons.Filled.Settings, "Settings") } }
+            if (bbcOn) SlidingPill(hz, 2, mode, Modifier.fillMaxWidth().padding(horizontal = 4.dp), height = 46.dp) { i, sel ->
                 Box(Modifier.weight(1f).fillMaxHeight().tap { picked = i; view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK) }, contentAlignment = Alignment.Center) {
                     Text(if (i == 0) "For you" else "Breaking", fontWeight = FontWeight.SemiBold,
                         color = if (sel) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
@@ -275,14 +272,13 @@ fun MyNewsScreen(
     val groups = remember(selected, topics) { NewsGroups.build(selected, topics) }
     val active = groups.firstOrNull { it.key == filter }
     Column(Modifier.fillMaxSize()) {
-        Row(Modifier.padding(start = 18.dp, end = 8.dp, top = top + 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("My News", Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        PageHeaderRow("My News", Modifier.padding(horizontal = 12.dp).padding(top = top + 4.dp)) {
             IconButton({ editing = true }) { Icon(Icons.Filled.Edit, "Edit My News") }
             IconButton(onSettings) { Icon(Icons.Filled.Settings, "Settings") }
         }
-        androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            item { FilterChip(active == null, { filter = null }, { Text("All") }) }
-            items(groups, key = { it.key }) { g -> FilterChip(active?.key == g.key, { filter = g.key }, { Text(g.title) }) }
+        androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            item { GlassChip(hz, active == null, "All") { filter = null } }
+            items(groups, key = { it.key }) { g -> GlassChip(hz, active?.key == g.key, g.title) { filter = g.key } }
         }
         LazyColumn(
             Modifier.fillMaxSize().haze(hz),

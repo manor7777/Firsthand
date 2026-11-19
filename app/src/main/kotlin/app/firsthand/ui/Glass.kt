@@ -11,7 +11,11 @@ import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -113,7 +117,7 @@ fun SlidingPill(
     val hi = MaterialTheme.colorScheme.primary
     val pad = with(androidx.compose.ui.platform.LocalDensity.current) { 5.dp.toPx() }
     Row(
-        modifier.height(height).glass(hz).drawBehind {
+        modifier.heightIn(min = height).glass(hz).drawBehind {
             val w = size.width / count
             drawRoundRect(hi, Offset(frac * w + pad, pad), Size(w - 2 * pad, size.height - 2 * pad), CornerRadius(size.height))
         },
@@ -122,3 +126,33 @@ fun SlidingPill(
 }
 
 fun Modifier.tap(onClick: () -> Unit) = clickable(onClick = onClick)
+
+/** The title row every top-level page shares (same type size, height and icon position), so the pages line up when you switch between them. */
+@Composable
+fun PageHeaderRow(
+    title: String, modifier: Modifier = Modifier, leading: (@Composable () -> Unit)? = null,
+    actions: @Composable RowScope.() -> Unit = {},
+) {
+    Row(modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
+        leading?.invoke()
+        Text(
+            title, Modifier.weight(1f).padding(start = if (leading == null) 8.dp else 0.dp),
+            style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        )
+        actions()
+    }
+}
+
+/** A filter chip in the same glass style as the pills and dock: frosted when off, the accent colour when on. */
+@Composable
+fun GlassChip(hz: HazeState, selected: Boolean, label: String, onClick: () -> Unit) {
+    val shape = CircleShape
+    Box(
+        Modifier.heightIn(min = 40.dp).let { if (selected) it.clip(shape).background(MaterialTheme.colorScheme.primary) else it.glass(hz, shape) }
+            .tap(onClick).padding(horizontal = 18.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(label, fontWeight = FontWeight.SemiBold, maxLines = 1, style = MaterialTheme.typography.labelLarge,
+            color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+    }
+}

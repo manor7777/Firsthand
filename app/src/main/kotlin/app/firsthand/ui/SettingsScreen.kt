@@ -61,7 +61,7 @@ fun SettingsScreen(
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val hz = remember { HazeState() }
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val headerH = 108.dp // back button + title row, the tab pill and the gaps between them
+    val headerH = 116.dp // back button + title row, the tab pill and the gaps between them
     Surface(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize()) {
             key(tab) { // each tab opens scrolled to the top
@@ -226,11 +226,8 @@ fun SettingsScreen(
                 }
             }
             EdgeScrim(hz, atTop = true, Modifier.align(Alignment.TopCenter).height(topInset + headerH + 28.dp))
-            Column(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
-                    Text("Settings", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                }
+            Column(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp).padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                PageHeaderRow("Settings", leading = { IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } })
                 SlidingPill(hz, tabs.size, tab, Modifier.fillMaxWidth(), height = 46.dp) { i, sel ->
                     Box(Modifier.weight(1f).fillMaxHeight().tap { tab = i }, contentAlignment = Alignment.Center) {
                         Text(
