@@ -95,10 +95,10 @@ private fun SectionLabel(t: String) =
 @Composable
 fun HomeScreen(
     hz: HazeState, breaking: List<Story>, mostRead: List<Story>, forYou: List<Story>, bbcOn: Boolean, breakingPage: Boolean,
-    refreshing: Boolean, onRefresh: () -> Unit, onOpen: (List<Story>, Int) -> Unit, onSearch: () -> Unit, onSettings: () -> Unit,
+    refreshing: Boolean, onRefresh: () -> Unit, onOpen: (List<Story>, Int) -> Unit, onSettings: () -> Unit,
 ) {
     val mode = if (bbcOn && breakingPage) 1 else 0 // 1 = Breaking; without BBC there is no Breaking page
-    val headerH = 140.dp // title row, search box and the fade under them
+    val headerH = 84.dp // title row and the fade under it
     val view = LocalView.current
     val state = rememberPullToRefreshState()
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -138,8 +138,7 @@ fun HomeScreen(
         }
         EdgeScrim(hz, atTop = true, Modifier.align(Alignment.TopCenter).height(top + headerH))
         Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(top = top + 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            PageHeaderRow("Firsthand") { IconButton(onSettings) { Icon(Icons.Filled.Settings, "Settings") } }
-            GlassSearchBox(hz, onSearch, Modifier.padding(horizontal = 4.dp))
+            PageHeaderRow(if (mode == 1) "Breaking" else "For you") { IconButton(onSettings) { Icon(Icons.Filled.Settings, "Settings") } }
         }
     }
 }
@@ -252,7 +251,7 @@ fun SearchScreen(
 @Composable
 fun MyNewsScreen(
     hz: HazeState, selected: List<String>, topics: Map<String, List<Story>>, sources: List<Source>, bbcOn: Boolean,
-    onChange: (List<String>) -> Unit, onOpen: (List<Story>, Int) -> Unit, onSearch: () -> Unit, onSettings: () -> Unit,
+    onChange: (List<String>) -> Unit, onOpen: (List<Story>, Int) -> Unit, onSettings: () -> Unit,
 ) {
     var editing by rememberSaveable { mutableStateOf(false) }
     var filter by rememberSaveable { mutableStateOf<String?>(null) } // null = all sections
@@ -269,7 +268,6 @@ fun MyNewsScreen(
             IconButton({ editing = true }) { Icon(Icons.Filled.Edit, "Edit My News") }
             IconButton(onSettings) { Icon(Icons.Filled.Settings, "Settings") }
         }
-        GlassSearchBox(hz, onSearch, Modifier.padding(horizontal = 16.dp).padding(bottom = 6.dp))
         androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             item { GlassChip(hz, active == null, "All") { filter = null } }
             items(groups, key = { it.key }) { g -> GlassChip(hz, active?.key == g.key, g.title) { filter = g.key } }

@@ -45,7 +45,7 @@ fun tabOrder(breakingFirst: Boolean, bbcOn: Boolean): List<Tab> = when {
 }
 
 /**
- * One wide glass pill of tabs. Searching (started from the search box at the top of each page) collapses the pill into one
+ * One wide glass pill of tabs plus a Search button. Searching collapses the pill into one
  * circle (showing the tab you came from) and shows the search field. Tapping the circle or X exits search.
  */
 @Composable
@@ -56,6 +56,7 @@ fun GlassDock(
     searching: Boolean,
     query: String,
     onTab: (Tab) -> Unit,
+    onSearch: () -> Unit,
     onExit: () -> Unit,
     onQuery: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -66,7 +67,16 @@ fun GlassDock(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (!searching) {
-            SlidingPill(hz, tabs.size, tabs.indexOf(tab).coerceAtLeast(0), Modifier.weight(1f), height = 64.dp) { i, sel ->
+            // The tabs, then Search as a fourth button (it never stays selected: it turns the bar into the search field).
+            SlidingPill(hz, tabs.size + 1, tabs.indexOf(tab).coerceAtLeast(0), Modifier.weight(1f), height = 64.dp) { i, sel ->
+                if (i == tabs.size) {
+                    val c = MaterialTheme.colorScheme.onSurfaceVariant
+                    Column(Modifier.weight(1f).tap(onSearch).padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Filled.Search, "Search", tint = c)
+                        Text("Search", color = c, style = MaterialTheme.typography.labelMedium)
+                    }
+                    return@SlidingPill
+                }
                 val t = tabs[i]
                 val c = if (sel) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                 Column(Modifier.weight(1f).tap { onTab(t) }.padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {

@@ -149,18 +149,6 @@ fun PageHeaderRow(
     }
 }
 
-/** The search box at the top of each page: a glass pill that opens search when tapped. */
-@Composable
-fun GlassSearchBox(hz: HazeState, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Row(
-        modifier.fillMaxWidth().heightIn(min = 46.dp).glass(hz, CircleShape).tap(onClick).padding(horizontal = 18.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        androidx.compose.material3.Icon(Icons.Filled.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text("Search news", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
-    }
-}
-
 /** A filter chip in the same glass style as the pills and dock: frosted when off, the accent colour when on. */
 @Composable
 fun GlassChip(hz: HazeState, selected: Boolean, label: String, onClick: () -> Unit) {
