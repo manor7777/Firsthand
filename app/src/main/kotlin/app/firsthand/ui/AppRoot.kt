@@ -41,6 +41,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     val accent by vm.accent.collectAsStateWithLifecycle()
     val mode by vm.themeMode.collectAsStateWithLifecycle()
     val homeDefault by vm.homeDefault.collectAsStateWithLifecycle()
+    val readAny by vm.readAnySite.collectAsStateWithLifecycle()
     val aOn by vm.alertEnabled.collectAsStateWithLifecycle()
     val aFollows by vm.alertOnlyFollows.collectAsStateWithLifecycle()
     val aMode by vm.alertMode.collectAsStateWithLifecycle()
@@ -160,7 +161,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
         }
         AnimatedVisibility(settingsOpen, enter = slideInHorizontally { it }, exit = slideOutHorizontally { it }) {
             SettingsScreen(accent, mode, homeDefault, vm::setAccent, vm::setThemeMode, vm::setHomeDefault, vm::exportJson, vm::importJson, alerts, updates,
-                BlockedUi(blocked, vm::unblockAuthor, blockedTerms, vm::addBlockedTerm, vm::removeBlockedTerm), SourcesUi(sources, vm::addSource, vm::addCustomSource, vm::removeSource, bbcOn, vm::setBbcEnabled)) { settingsOpen = false }
+                BlockedUi(blocked, vm::unblockAuthor, blockedTerms, vm::addBlockedTerm, vm::removeBlockedTerm), SourcesUi(sources, vm::addSource, vm::addCustomSource, vm::removeSource, bbcOn, vm::setBbcEnabled, readAny, vm::setReadAnySite)) { settingsOpen = false }
         }
     }
     }

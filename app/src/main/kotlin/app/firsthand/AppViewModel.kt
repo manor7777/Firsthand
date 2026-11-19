@@ -16,6 +16,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val prefs = Prefs(app)
 
     /** BBC News on/off. Off hides everything from the BBC (Home headlines, topics, writers, search, alerts); the choices are kept. */
+    val readAnySite = prefs.readAnySite.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    fun setReadAnySite(v: Boolean) { viewModelScope.launch { prefs.setReadAnySite(v) } }
     val bbcEnabled = prefs.bbcEnabled.stateIn(viewModelScope, SharingStarted.Eagerly, true)
     fun setBbcEnabled(v: Boolean) {
         viewModelScope.launch {
@@ -191,12 +193,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val blockedTerms: List<String> = emptyList(),
         val alertBreaking: Boolean = true, val alertOffSources: List<String> = emptyList(), val alertCategories: List<String> = emptyList(),
         val alertKeywords: List<String> = emptyList(), val quietEnabled: Boolean = false, val quietStart: Int = 22, val quietEnd: Int = 7,
-        val homeDefault: String = "foryou",
+        val homeDefault: String = "foryou", val readAnySite: Boolean = true,
     )
 
     fun exportJson(): String = kotlinx.serialization.json.Json { prettyPrint = true }
         .encodeToString(SettingsExport.serializer(), SettingsExport(1, follows.value, accent.value, themeMode.value, alertOnlyFollows.value, alertMode.value, alertInterval.value, blockedAuthors.value, sourceEntries.value, bbcEnabled.value, blockedTerms.value,
-            alertBreaking.value, alertOffSources.value, alertCategories.value, alertKeywords.value, quietEnabled.value, quietStart.value, quietEnd.value, homeDefault.value))
+            alertBreaking.value, alertOffSources.value, alertCategories.value, alertKeywords.value, quietEnabled.value, quietStart.value, quietEnd.value, homeDefault.value, readAnySite.value))
 
     /** Validates then applies an exported settings file. Returns false if it isn't one. */
     fun importJson(text: String): Boolean = runCatching {
@@ -215,6 +217,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             prefs.setAlertCategories(e.alertCategories.filter { it in Categories.sharedCategories }.distinct())
             prefs.setAlertKeywords(Blocking.parseAll(e.alertKeywords).map { it.line })
             prefs.setQuiet(e.quietEnabled, e.quietStart, e.quietEnd)
+            prefs.setReadAnySite(e.readAnySite)
             prefs.setHomeDefault(if (e.homeDefault == "breaking") "breaking" else "foryou")
             prefs.setBlockedTerms(Blocking.parseAll(e.blockedTerms).map { it.line })
             prefs.setSources(e.sources.filter { Sources.resolve(it) != null }.distinct())
@@ -302,6 +305,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun linkSource(url: String): Source? = Sources.matchLink(url, sources.value)
 
     /** Opens an added source's article in the reader (headline and picture are read from the page first). */
+    /** Opens any shared web page in the reader (headline and picture from the page; the site's address gives its name). */
+    fun openWebLink(url: String) { viewModelScope.launch { pendingOpen.value = repo.storyFromSourceLink(url, Sources.siteName(url)) } }
+
     fun openSourceLink(src: Source, url: String) { viewModelScope.launch { pendingOpen.value = repo.storyFromSourceLink(url, src.name) } }
 
     /** Opens a tapped bbc.com / bbc.co.uk news link in the reader (title/image are read from the page first). */

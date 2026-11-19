@@ -90,6 +90,10 @@ class Prefs(private val ctx: Context) {
 
     // BBC News is a source like any other and can be switched off (its follows are kept, just hidden, so switching back restores them).
     private val bbcKey = booleanPreferencesKey("bbc_enabled")
+    private val readAnyKey = booleanPreferencesKey("read_any_site")
+    /** Whether a website shared to the app opens in the reader (default) or just in the browser. */
+    val readAnySite: Flow<Boolean> = ctx.store.data.map { it[readAnyKey] ?: true }
+    suspend fun setReadAnySite(v: Boolean) { ctx.store.edit { it[readAnyKey] = v } }
     val bbcEnabled: Flow<Boolean> = ctx.store.data.map { it[bbcKey] ?: true }
     suspend fun setBbcEnabled(v: Boolean) { ctx.store.edit { it[bbcKey] = v } }
 

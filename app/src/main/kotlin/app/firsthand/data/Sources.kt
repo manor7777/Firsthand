@@ -146,6 +146,31 @@ object Sources {
         if (!looksLikeArticle(u.rawPath.orEmpty())) return null
         return added.firstOrNull { host in it.hosts }
     }
+    private val notArticleHosts = setOf(
+        "youtube.com", "youtu.be", "x.com", "twitter.com", "instagram.com", "facebook.com", "fb.com", "tiktok.com", "reddit.com",
+        "linkedin.com", "pinterest.com", "whatsapp.com", "wa.me", "t.me", "maps.google.com", "play.google.com", "spotify.com", "open.spotify.com",
+    )
+
+    /** A shared address worth trying in the reader: a web page below the site's front page, on a site that isn't social media, video or maps. */
+    fun isReadableWebLink(url: String): Boolean {
+        val u = runCatching { URI(url) }.getOrNull() ?: return false
+        if (u.scheme?.lowercase() !in setOf("http", "https") || u.rawUserInfo != null) return false
+        val host = (u.host ?: return false).lowercase().removePrefix("www.")
+        if (host.none { it == '.' } || notArticleHosts.any { host == it || host.endsWith(".$it") }) return false
+        return u.rawPath.orEmpty().trim('/').isNotEmpty()
+    }
+
+    private val twoPartTlds = setOf("co.uk", "org.uk", "com.au", "co.nz", "co.za", "com.br", "co.jp", "co.in", "com.sg", "ac.uk", "gov.uk")
+
+    /** A readable name for a site from its address: "www.example-news.co.uk" -> "Example News". */
+    fun siteName(url: String): String {
+        val host = runCatching { URI(url).host }.getOrNull()?.lowercase()?.removePrefix("www.")?.removePrefix("m.")?.removePrefix("amp.") ?: return "Web"
+        val parts = host.split('.')
+        val keep = if (parts.size >= 3 && parts.takeLast(2).joinToString(".") in twoPartTlds) parts.size - 3 else parts.size - 2
+        val label = parts.getOrNull(keep.coerceAtLeast(0)) ?: host
+        return label.split('-').filter { it.isNotEmpty() }.joinToString(" ") { it.replaceFirstChar(Char::uppercase) }.ifEmpty { host }
+    }
+
     val groups: List<String> = catalog.map { it.group }.distinct()
 
     fun presetEntry(s: Source) = P + s.id

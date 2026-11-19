@@ -155,4 +155,21 @@ class SourcesTest {
         assertTrue(ExternalArticle.parse("<html><body><p>Subscribe to read</p></body></html>", "https://e.com/a", null).blocks.isEmpty())
         assertTrue(ExternalArticle.parse("not html at all", "https://e.com/a", null).blocks.isEmpty())
     }
+
+    @Test fun `any shared web page can be read, social and front pages cannot`() {
+        assertTrue(Sources.isReadableWebLink("https://www.example-news.co.uk/world/2026/11/18/some-story"))
+        assertTrue(Sources.isReadableWebLink("http://blog.example.com/post/1"))
+        assertFalse(Sources.isReadableWebLink("https://www.example.com/"))
+        assertFalse(Sources.isReadableWebLink("https://www.youtube.com/watch?v=abc"))
+        assertFalse(Sources.isReadableWebLink("https://m.facebook.com/story/1"))
+        assertFalse(Sources.isReadableWebLink("ftp://example.com/a/b"))
+        assertFalse(Sources.isReadableWebLink("https://user:pw@example.com/a"))
+    }
+
+    @Test fun `site names come from the address`() {
+        assertEquals("Example News", Sources.siteName("https://www.example-news.co.uk/a/b"))
+        assertEquals("Example", Sources.siteName("https://m.example.com/a"))
+        assertEquals("Theregister", Sources.siteName("https://www.theregister.com/x/y"))
+        assertEquals("Blog", Sources.siteName("https://amp.blog.com/p"))
+    }
 }

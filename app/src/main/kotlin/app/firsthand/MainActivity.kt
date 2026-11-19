@@ -52,6 +52,8 @@ class MainActivity : ComponentActivity() {
         when {
             link != null && link !is DeepLinks.Link.Unsupported -> vm.openLink(link)
             src != null -> vm.openSourceLink(src, url)
+            // Any other web page: the reader strips cookie notices, ads and clutter. Social, video and maps links stay in the browser.
+            vm.readAnySite.value && app.firsthand.data.Sources.isReadableWebLink(url) -> vm.openWebLink(url)
             else -> {
                 ExternalBrowser.open(this, url)
                 if (launching) finish()

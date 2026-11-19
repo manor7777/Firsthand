@@ -110,6 +110,13 @@ fun SettingsScreen(
                     feedMsg?.let { Text(it, color = if (it.startsWith("Added")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error) }
                     Heading("Opening links")
                     Text("Open article links from BBC News and the publishers you've added (and Google share links to them) in Firsthand when you tap them elsewhere, such as in Google Discover. Android needs this switched on once: tap below, tap \"Add link\" and tick every address (the publishers' ones, plus share.google and search.app for links shared from Google). Android doesn't let unofficial apps switch this on themselves, and it only offers publishers you've added. If the official BBC News app is installed, turn its links off there. Feeds added by address can't be opened this way, but sharing one of their articles to Firsthand works.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Read shared websites", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                            Text("Share any web page to Firsthand to read it here without cookie notices, ads or pop-ups. Pages that can't be read, and social, video and map links, open in your browser. Subscriber-only articles can't be unlocked.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(sources.readAny, sources.setReadAny)
+                    }
                     var links by remember { mutableStateOf(ExternalBrowser.linkStatus(ctx)) }
                     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { links = ExternalBrowser.linkStatus(ctx) }
                     links?.let { l ->
@@ -268,6 +275,7 @@ class SourcesUi(
     val added: List<Source>, val add: (Source) -> Unit,
     val addCustom: (String, String, (String) -> Unit) -> Unit, val remove: (Source) -> Unit,
     val bbcOn: Boolean, val setBbc: (Boolean) -> Unit,
+    val readAny: Boolean = true, val setReadAny: (Boolean) -> Unit = {},
 ) {
     val removeBbc: () -> Unit get() = { setBbc(false) }
 }

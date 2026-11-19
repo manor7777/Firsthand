@@ -27,6 +27,7 @@ A private, sideloaded Android news reader that pulls from the sources you choose
 - **Follows.** Topics, sections, writers and keywords appear in *My News* and *For you*.
 - **Categories are merged across sources.** In *My News*, sections that mean the same thing are one group: BBC *Tech*, Sky *Technology* and Guardian *Technology* become a single **Tech** list, newest first (likewise World, Business, which also takes Money and Business Affairs, Football/Soccer, Culture with TV, Film and Celebrity, Science, Health, Crime, and more). Sections with no common category, such as a front page or a local section, stay on their own. Whenever more than one source is in use, every story card carries a pill naming its source.
 - **Opens links from your sources.** Tap one of your sources' articles in Google Discover, a browser or another app and it opens in Firsthand's reader (see *Opening links in the app*). *Share > Firsthand* works too.
+- **Read any website.** *Share > Firsthand* from a browser or any app opens that page in the reader, from any site (not only your sources), without its cookie notices, ads or pop-ups: the page is fetched and only the article text and pictures are shown (see *How it gets the news*). Pages that can't be read, social, video and map links, and subscriber-only text that the site doesn't send, open in your browser or show an *Open original* button. Switch it off in *Settings > Sources > Read shared websites*.
 - **Search** across what's loaded (and live search where a source supports it), and customisable **alerts** with pictures (see *Alerts*).
 - **Tidy settings.** Settings are grouped into four glass tabs, like Home: *Sources* (your sources and link opening), *Blocking* (writers and keywords), *Alerts* (all alert options, as cards), and *General* (theme, Home tab, accent colour, updates, backup, about).
 - **Backup.** Export/import your settings (`firsthand-settings.json`: sources, follows, blocked writers and keywords, theme), and in-app updates from GitHub Releases.
@@ -55,6 +56,8 @@ Article links from every source you've added open in Firsthand's native reader. 
 Android 12+ never auto-routes unverified web links to an app, and Android can't be told about new domains while an app is running, so this works in two steps:
 1. The app declares each built-in source's domains in its manifest as a *disabled* alias, and enables the alias when you add that source (and disables it when you remove it). That is what makes the source appear in Android's list. After you add a source the app offers to take you to the right screen.
 2. You switch it on once: **Settings > Opening links > Open link settings** (or system Settings > Apps > Firsthand > Open by default), turn on *Open supported links*, tap *Add link* and tick the addresses. If another app from the same publisher is installed, turn off its links there.
+
+Any other website can be shared to Firsthand and is read the same way (*Read shared websites*); its name in the story is taken from its address.
 
 Feeds added **by address** can't be picked up automatically (their domain isn't known when the app is built), but sharing one of their articles to Firsthand opens it in the reader.
 
