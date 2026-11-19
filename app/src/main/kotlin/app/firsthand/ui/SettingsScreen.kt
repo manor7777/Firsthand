@@ -57,7 +57,7 @@ fun SettingsScreen(
     }
     BackHandlerCompat(onBack)
     // Settings are grouped into glass tabs (the same sliding pill as Home) so it isn't one long list.
-    val tabs = listOf("Sources", "Links", "Blocking", "Alerts", "General")
+    val tabs = listOf("General", "Sources", "Links", "Blocking", "Alerts")
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val hz = remember { HazeState() }
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -70,7 +70,7 @@ fun SettingsScreen(
                         .padding(top = topInset + headerH + 8.dp, bottom = 32.dp).windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars)),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    when (tab) {
+                    when (intArrayOf(4, 0, 1, 2, 3)[tab]) { // the pill order differs from the order the sections are written in below
                         0 -> {
                     Heading("News sources")
                     Text("Add publishers that offer RSS feeds: local papers, national titles, world news. Their sections appear in My News under the publisher's name, and their writers can be followed or blocked like BBC ones.", color = MaterialTheme.colorScheme.onSurfaceVariant)
