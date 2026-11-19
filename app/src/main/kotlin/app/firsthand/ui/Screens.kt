@@ -98,7 +98,7 @@ fun HomeScreen(
     refreshing: Boolean, onRefresh: () -> Unit, onOpen: (List<Story>, Int) -> Unit, onSettings: () -> Unit,
 ) {
     val mode = if (bbcOn && breakingPage) 1 else 0 // 1 = Breaking; without BBC there is no Breaking page
-    val headerH = 84.dp // title row and the fade under it
+    val headerH = 117.dp // title row, then the space My News fills with its section chips, so the first section label sits at the same height on every tab
     val view = LocalView.current
     val state = rememberPullToRefreshState()
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
