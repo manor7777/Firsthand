@@ -42,7 +42,8 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
     val accent by vm.accent.collectAsStateWithLifecycle()
     val mode by vm.themeMode.collectAsStateWithLifecycle()
-    val homeDefault by vm.homeDefault.collectAsStateWithLifecycle()
+    val barIds by vm.barOrder.collectAsStateWithLifecycle()
+    val tipSeen by vm.barTipSeen.collectAsStateWithLifecycle()
     val readAny by vm.readAnySite.collectAsStateWithLifecycle()
     val aOn by vm.alertEnabled.collectAsStateWithLifecycle()
     val aFollows by vm.alertOnlyFollows.collectAsStateWithLifecycle()
@@ -75,8 +76,10 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     val blockedTerms by vm.blockedTerms.collectAsStateWithLifecycle()
     val sources by vm.sources.collectAsStateWithLifecycle()
     val bbcOn by vm.bbcEnabled.collectAsStateWithLifecycle()
-    val tabs = tabOrder(homeDefault == "breaking", bbcOn)
-    val tab = picked?.takeIf { it in tabs } ?: tabs.first()
+    val bar = barIds.mapNotNull(Tab::of)
+    // The home page is the first button that is a page (the second one when Search comes first).
+    val home = Tab.of(app.firsthand.data.BarOrder.home(barIds)) ?: Tab.ForYou
+    val tab = picked?.takeIf { it != Tab.Search && it in bar } ?: home
     val aBreaking by vm.alertBreaking.collectAsStateWithLifecycle()
     val aOff by vm.alertOffSources.collectAsStateWithLifecycle()
     val aCats by vm.alertCategories.collectAsStateWithLifecycle()
@@ -119,11 +122,12 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
         EdgeScrim(hz, atTop = false, Modifier.align(Alignment.BottomCenter).then(
             if (imeUp) Modifier.imePadding().height(120.dp) else Modifier.height(WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 120.dp)))
         GlassDock(
-            hz, tabs, tab, searching, query,
-            onTab = { picked = it }, onSearch = { searching = true },
+            hz, bar, tab, searching, query,
+            onTab = { picked = it }, onSearch = { searching = true }, onReorder = { l -> vm.setBarOrder(l.map { it.id }) },
             onExit = { searching = false; query = "" }, onQuery = { query = it },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+        if (!tipSeen && !searching && !settingsOpen && stack.isEmpty()) BarTip(vm::dismissBarTip)
         // Every page in the stack stays composed (so going back keeps scroll/swipe position); only the top one handles back.
         stack.forEachIndexed { i, sc ->
             key(sc.id) {
@@ -167,7 +171,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
             }
         }
         AnimatedVisibility(settingsOpen, enter = slideInHorizontally { it }, exit = slideOutHorizontally { it }) {
-            SettingsScreen(accent, mode, homeDefault, vm::setAccent, vm::setThemeMode, vm::setHomeDefault, vm::exportJson, vm::importJson, alerts, updates,
+            SettingsScreen(accent, mode, vm::setAccent, vm::setThemeMode, vm::resetBarOrder, vm::exportJson, vm::importJson, alerts, updates,
                 BlockedUi(blocked, vm::unblockAuthor, blockedTerms, vm::addBlockedTerm, vm::removeBlockedTerm), SourcesUi(sources, vm::addSource, vm::addCustomSource, vm::removeSource, bbcOn, vm::setBbcEnabled, readAny, vm::setReadAnySite)) { settingsOpen = false }
         }
     }

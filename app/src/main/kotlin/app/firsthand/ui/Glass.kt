@@ -113,6 +113,8 @@ fun SlidingPill(
     selected: Int,
     modifier: Modifier = Modifier,
     height: androidx.compose.ui.unit.Dp = 56.dp,
+    /** Stable identity per item, so an item keeps its state (and an ongoing drag) when the items are reordered. */
+    keys: List<Any>? = null,
     item: @Composable RowScope.(index: Int, selected: Boolean) -> Unit,
 ) {
     val frac by animateFloatAsState(selected.toFloat(), spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow), label = "pill")
@@ -128,7 +130,7 @@ fun SlidingPill(
             drawRoundRect(edge, o, sz, CornerRadius(size.height), style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
         },
         verticalAlignment = Alignment.CenterVertically,
-    ) { for (i in 0 until count) item(i, i == selected) }
+    ) { for (i in 0 until count) androidx.compose.runtime.key(keys?.getOrNull(i) ?: i) { item(i, i == selected) } }
 }
 
 fun Modifier.tap(onClick: () -> Unit) = clickable(onClick = onClick)

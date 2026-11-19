@@ -40,8 +40,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val themeMode = prefs.theme.stateIn(viewModelScope, SharingStarted.Eagerly, "system")
     fun setAccent(v: String) { viewModelScope.launch { prefs.setAccent(v) } }
     fun setThemeMode(v: String) { viewModelScope.launch { prefs.setTheme(v) } }
-    val homeDefault = prefs.homeDefault.stateIn(viewModelScope, SharingStarted.Eagerly, "foryou")
-    fun setHomeDefault(v: String) { viewModelScope.launch { prefs.setHomeDefault(v) } }
+    private val barOrderStored = prefs.barOrder.stateIn(viewModelScope, SharingStarted.Eagerly, BarOrder.default)
+    /** The bottom bar's buttons in the user's order (Breaking left out without BBC News). */
+    val barOrder: StateFlow<List<String>> = combine(barOrderStored, bbcEnabled) { o, b -> BarOrder.visible(o, b) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, BarOrder.default)
+    fun setBarOrder(visible: List<String>) { viewModelScope.launch { prefs.setBarOrder(BarOrder.merge(visible, barOrderStored.value)) } }
+    fun resetBarOrder() { viewModelScope.launch { prefs.setBarOrder(BarOrder.default) } }
+    /** Starts true (hidden) so the tip doesn't flash before the saved value loads. */
+    val barTipSeen = prefs.barTipSeen.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    fun dismissBarTip() { viewModelScope.launch { prefs.setBarTipSeen(true) } }
 
     /** Stored source entries and the publishers they stand for. BBC News is built in; these are the ones added in Settings. */
     private val sourceEntries = prefs.sources.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -193,12 +200,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val blockedTerms: List<String> = emptyList(),
         val alertBreaking: Boolean = true, val alertOffSources: List<String> = emptyList(), val alertCategories: List<String> = emptyList(),
         val alertKeywords: List<String> = emptyList(), val quietEnabled: Boolean = false, val quietStart: Int = 22, val quietEnd: Int = 7,
-        val homeDefault: String = "foryou", val readAnySite: Boolean = true,
+        val barOrder: List<String> = emptyList(), val readAnySite: Boolean = true,
     )
 
     fun exportJson(): String = kotlinx.serialization.json.Json { prettyPrint = true }
         .encodeToString(SettingsExport.serializer(), SettingsExport(1, follows.value, accent.value, themeMode.value, alertOnlyFollows.value, alertMode.value, alertInterval.value, blockedAuthors.value, sourceEntries.value, bbcEnabled.value, blockedTerms.value,
-            alertBreaking.value, alertOffSources.value, alertCategories.value, alertKeywords.value, quietEnabled.value, quietStart.value, quietEnd.value, homeDefault.value, readAnySite.value))
+            alertBreaking.value, alertOffSources.value, alertCategories.value, alertKeywords.value, quietEnabled.value, quietStart.value, quietEnd.value, barOrderStored.value, readAnySite.value))
 
     /** Validates then applies an exported settings file. Returns false if it isn't one. */
     fun importJson(text: String): Boolean = runCatching {
@@ -218,7 +225,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             prefs.setAlertKeywords(Blocking.parseAll(e.alertKeywords).map { it.line })
             prefs.setQuiet(e.quietEnabled, e.quietStart, e.quietEnd)
             prefs.setReadAnySite(e.readAnySite)
-            prefs.setHomeDefault(if (e.homeDefault == "breaking") "breaking" else "foryou")
+            if (e.barOrder.isNotEmpty()) prefs.setBarOrder(BarOrder.normalise(e.barOrder))
             prefs.setBlockedTerms(Blocking.parseAll(e.blockedTerms).map { it.line })
             prefs.setSources(e.sources.filter { Sources.resolve(it) != null }.distinct())
             prefs.setBlockedAuthors(e.blockedAuthors.map(String::trim).filter { it.length in 2..80 }.distinctBy { Author.key(it) })

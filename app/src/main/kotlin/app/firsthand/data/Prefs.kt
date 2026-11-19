@@ -27,10 +27,14 @@ class Prefs(private val ctx: Context) {
     val theme: Flow<String> = ctx.store.data.map { it[themeKey] ?: "system" }
     suspend fun setAccent(v: String) { ctx.store.edit { it[accentKey] = v } }
     suspend fun setTheme(v: String) { ctx.store.edit { it[themeKey] = v } }
-    private val homeKey = stringPreferencesKey("home_default")
-    /** Which Home page opens first: "foryou" (default) or "breaking". */
-    val homeDefault: Flow<String> = ctx.store.data.map { it[homeKey] ?: "foryou" }
-    suspend fun setHomeDefault(v: String) { ctx.store.edit { it[homeKey] = v } }
+    private val barKey = stringPreferencesKey("bar_order")
+    /** The bottom bar's button order (see BarOrder); always all four ids. */
+    val barOrder: Flow<List<String>> = ctx.store.data.map { BarOrder.parse(it[barKey]) }
+    suspend fun setBarOrder(v: List<String>) { ctx.store.edit { it[barKey] = BarOrder.encode(v) } }
+    private val barTipKey = booleanPreferencesKey("bar_tip_seen")
+    /** True once the one-time "press and hold to rearrange" tip has been dismissed. */
+    val barTipSeen: Flow<Boolean> = ctx.store.data.map { it[barTipKey] ?: false }
+    suspend fun setBarTipSeen(v: Boolean) { ctx.store.edit { it[barTipKey] = v } }
 
     // Breaking-news alerts
     private val aEnabled = booleanPreferencesKey("alert_enabled")
