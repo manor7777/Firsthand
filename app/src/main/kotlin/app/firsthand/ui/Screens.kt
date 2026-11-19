@@ -98,13 +98,24 @@ fun HomeScreen(
     refreshing: Boolean, onRefresh: () -> Unit, onOpen: (List<Story>, Int) -> Unit,
 ) {
     val mode = if (bbcOn && breakingPage) 1 else 0 // 1 = Breaking; without BBC there is no Breaking page
-    val headerH = 117.dp // title row, then the space My News fills with its section chips, so the first section label sits at the same height on every tab
+    val headerH = 117.dp // title row and the chip row (the same height as My News, so the first section label sits at the same height on every tab)
     val view = LocalView.current
     val state = rememberPullToRefreshState()
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     LaunchedEffect(state.distanceFraction >= 1f) { if (state.distanceFraction >= 1f) view.performHapticFeedback(HapticFeedbackConstants.CONFIRM) }
 
-    val flat = if (mode == 1) breaking.take(5) + mostRead.take(5) else forYou
+    // Filter chips under the title, like My News: the two Breaking lists, or the topics found in For you (shared category names).
+    fun topicOf(s: Story) = Categories.sharedName(s.category) ?: s.category.trim()
+    val chips: List<String> = if (mode == 1) listOf("Breaking now", "Most read")
+        else forYou.map(::topicOf).filter { it.isNotEmpty() }.groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.take(8).map { it.key }
+    var picked by rememberSaveable(mode) { mutableStateOf<String?>(null) }
+    val sel = picked?.takeIf { it in chips }
+    val showBreaking = sel == null || sel == "Breaking now"
+    val showMost = sel == null || sel == "Most read"
+    val breakingShown = if (showBreaking) breaking.take(5) else emptyList()
+    val mostShown = if (showMost) mostRead.take(5) else emptyList()
+    val forYouShown = if (sel == null) forYou else forYou.filter { topicOf(it) == sel }
+    val flat = if (mode == 1) breakingShown + mostShown else forYouShown
 
     Box(Modifier.fillMaxSize()) {
         PullToRefreshBox(
@@ -119,10 +130,10 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 if (mode == 1) {
-                    item { SectionLabel("Breaking now") }
-                    itemsIndexed(breaking.take(5)) { i, s -> StoryCard(s, big = i == 0) { onOpen(flat, i) } }
-                    item { SectionLabel("Most read") }
-                    itemsIndexed(mostRead.take(5)) { i, s -> StoryCard(s, false, rank = i + 1) { onOpen(flat, breaking.take(5).size + i) } }
+                    if (showBreaking) item { SectionLabel("Breaking now") }
+                    itemsIndexed(breakingShown) { i, s -> StoryCard(s, big = i == 0) { onOpen(flat, i) } }
+                    if (showMost) item { SectionLabel("Most read") }
+                    itemsIndexed(mostShown) { i, s -> StoryCard(s, false, rank = i + 1) { onOpen(flat, breakingShown.size + i) } }
                 } else {
                     item { SectionLabel("Top for you") }
                     if (forYou.isEmpty()) item {
@@ -132,13 +143,17 @@ fun HomeScreen(
                             Modifier.padding(4.dp), color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    itemsIndexed(forYou) { i, s -> StoryCard(s, big = i == 0) { onOpen(flat, i) } }
+                    itemsIndexed(forYouShown) { i, s -> StoryCard(s, big = i == 0) { onOpen(flat, i) } }
                 }
             }
         }
         EdgeScrim(hz, atTop = true, Modifier.align(Alignment.TopCenter).height(top + headerH))
-        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(top = top + 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            PageHeaderRow(if (mode == 1) "Breaking" else "For you")
+        Column(Modifier.fillMaxWidth().padding(top = top + 4.dp)) {
+            PageHeaderRow(if (mode == 1) "Breaking" else "For you", Modifier.padding(horizontal = 12.dp))
+            if (chips.isNotEmpty()) androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                item { GlassChip(hz, sel == null, "All") { picked = null } }
+                items(chips) { c -> GlassChip(hz, sel == c, c) { picked = c } }
+            }
         }
     }
 }
