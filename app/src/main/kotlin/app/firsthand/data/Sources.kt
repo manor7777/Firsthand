@@ -47,6 +47,7 @@ object Sources {
     private fun simple(name: String, group: String, hosts: List<String>, vararg feeds: Pair<String, String>) =
         Source(slug(name), name, group, feeds.map { (n, u) -> SourceFeed(n, u) }, hosts = hosts)
 
+    private const val REG = "https://www.theregister.com"
     private const val G = "https://www.theguardian.com"
     private const val SKY = "https://feeds.skynews.com/feeds/rss"
     private const val IND = "https://www.independent.co.uk"
@@ -106,6 +107,12 @@ object Sources {
             "Arts" to "$NYT/Arts.xml", "Politics" to "$NYT/Politics.xml"),
         simple("The Conversation UK", "Tech & ideas", listOf("theconversation.com"), "Articles" to "https://theconversation.com/uk/articles.atom"),
         simple("Ars Technica", "Tech & ideas", listOf("arstechnica.com", "www.arstechnica.com"), "Latest" to "https://feeds.arstechnica.com/arstechnica/index"),
+        simple("The Register", "Tech & ideas", listOf("theregister.com", "www.theregister.com"),
+            "All" to "https://www.theregister.com/?lab_viewport=rss",
+            "Security" to "$REG/security/headlines.atom", "AI & ML" to "$REG/ai-and-ml/headlines.atom", "Software" to "$REG/software/headlines.atom",
+            "Networks" to "$REG/networks/headlines.atom", "Personal Tech" to "$REG/personal-tech/headlines.atom", "Science" to "$REG/science/headlines.atom",
+            "Systems" to "$REG/systems/headlines.atom", "Storage" to "$REG/storage/headlines.atom", "HPC" to "$REG/hpc/headlines.atom",
+            "OS & Platforms" to "$REG/os-platforms/headlines.atom", "Patches" to "$REG/patches/headlines.atom", "DevOps" to "$REG/devops/headlines.atom"),
         simple("The Verge", "Tech & ideas", listOf("theverge.com", "www.theverge.com"), "Latest" to "https://www.theverge.com/rss/index.xml"),
     )
 

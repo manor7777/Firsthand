@@ -128,7 +128,7 @@ object Categories {
         add("UK", "uk", "uk news", "britain", "british news")
         add("Politics", "politics", "uk politics", "us politics", "government", "westminster", "election", "elections")
         add("Business", "business", "business news", "business affairs", "economy", "money", "finance", "markets", "companies", "business & finance", "personal finance", "consumer", "work")
-        add("Tech", "tech", "technology", "science & tech", "science and tech", "science and technology", "tech & science", "gadgets", "cyber", "internet", "ai", "gaming", "games")
+        add("Tech", "tech", "technology", "science & tech", "science and tech", "science and technology", "tech & science", "gadgets", "cyber", "internet", "ai", "gaming", "games", "security", "ai & ml", "software", "networks", "personal tech", "devops")
         add("Science", "science", "science & environment", "science and environment", "space")
         add("Environment", "environment", "climate", "climate change", "climate crisis", "green", "nature", "wildlife")
         add("Health", "health", "health & wellbeing", "wellbeing", "medicine", "nhs", "social care")
