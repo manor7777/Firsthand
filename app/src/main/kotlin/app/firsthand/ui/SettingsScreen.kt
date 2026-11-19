@@ -232,7 +232,7 @@ fun SettingsScreen(
                     Box(Modifier.weight(1f).fillMaxHeight().tap { tab = i }, contentAlignment = Alignment.Center) {
                         Text(
                             tabs[i], fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelLarge, maxLines = 1,
-                            color = if (sel) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                            color = if (sel) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }

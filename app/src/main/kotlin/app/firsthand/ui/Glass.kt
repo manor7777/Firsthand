@@ -55,7 +55,7 @@ fun Modifier.glass(hz: HazeState, shape: Shape = CircleShape): Modifier {
             style = HazeStyle(backgroundColor = surface, tint = HazeTint(surface.copy(alpha = 0.40f)), blurRadius = 24.dp),
         )
         .clip(shape)
-        .border(1.dp, Color.White.copy(alpha = 0.28f), shape)
+        .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f), shape)
         .then(if (Build.VERSION.SDK_INT >= 33) Modifier.lensHighlight() else Modifier)
 }
 
@@ -88,8 +88,8 @@ half4 main(float2 p) {
     float2 q = abs(p - size * 0.5) - (size * 0.5 - float2(r));
     float d = length(max(q, float2(0.0))) + min(max(q.x, q.y), 0.0) - r;
     float rim = smoothstep(-7.0, 0.0, d);
-    float sheen = (1.0 - p.y / size.y) * 0.10 * (1.0 - rim);
-    float a = rim * 0.34 + sheen;
+    float sheen = (1.0 - p.y / size.y) * 0.05 * (1.0 - rim);
+    float a = rim * 0.12 + sheen;
     return half4(a, a, a, a);
 }
 """
@@ -116,12 +116,16 @@ fun SlidingPill(
     item: @Composable RowScope.(index: Int, selected: Boolean) -> Unit,
 ) {
     val frac by animateFloatAsState(selected.toFloat(), spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow), label = "pill")
-    val hi = MaterialTheme.colorScheme.primary
+    // A quiet frosted highlight, not a solid accent block: lighter glass inside the bar.
+    val hi = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.13f)
+    val edge = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
     val pad = with(androidx.compose.ui.platform.LocalDensity.current) { 5.dp.toPx() }
     Row(
         modifier.heightIn(min = height).glass(hz).drawBehind {
             val w = size.width / count
-            drawRoundRect(hi, Offset(frac * w + pad, pad), Size(w - 2 * pad, size.height - 2 * pad), CornerRadius(size.height))
+            val o = Offset(frac * w + pad, pad); val sz = Size(w - 2 * pad, size.height - 2 * pad)
+            drawRoundRect(hi, o, sz, CornerRadius(size.height))
+            drawRoundRect(edge, o, sz, CornerRadius(size.height), style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
         },
         verticalAlignment = Alignment.CenterVertically,
     ) { for (i in 0 until count) item(i, i == selected) }
@@ -162,11 +166,11 @@ fun GlassSearchBox(hz: HazeState, onClick: () -> Unit, modifier: Modifier = Modi
 fun GlassChip(hz: HazeState, selected: Boolean, label: String, onClick: () -> Unit) {
     val shape = CircleShape
     Box(
-        Modifier.heightIn(min = 40.dp).let { if (selected) it.clip(shape).background(MaterialTheme.colorScheme.primary) else it.glass(hz, shape) }
+        Modifier.heightIn(min = 40.dp).let { if (selected) it.clip(shape).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f)).border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f), shape) else it.glass(hz, shape) }
             .tap(onClick).padding(horizontal = 18.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(label, fontWeight = FontWeight.SemiBold, maxLines = 1, style = MaterialTheme.typography.labelLarge,
-            color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+            color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

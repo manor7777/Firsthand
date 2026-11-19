@@ -12,6 +12,9 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Newspaper
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.Newspaper
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,10 +31,10 @@ import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 
 /** The three bottom tabs. For you and Breaking are the two Home pages; which comes first (and opens first) is a Settings choice. */
-enum class Tab(val label: String, val icon: ImageVector) {
-    ForYou("For you", Icons.Filled.AutoAwesome),
-    Breaking("Breaking", Icons.Filled.Bolt),
-    MyNews("My News", Icons.Filled.Newspaper),
+enum class Tab(val label: String, val icon: ImageVector, val iconOff: ImageVector) {
+    ForYou("For you", Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome),
+    Breaking("Breaking", Icons.Filled.Bolt, Icons.Outlined.Bolt),
+    MyNews("My News", Icons.Filled.Newspaper, Icons.Outlined.Newspaper),
 }
 
 /** The tabs in display order: Breaking only exists while BBC News is a source. */
@@ -65,10 +68,10 @@ fun GlassDock(
         if (!searching) {
             SlidingPill(hz, tabs.size, tabs.indexOf(tab).coerceAtLeast(0), Modifier.weight(1f), height = 64.dp) { i, sel ->
                 val t = tabs[i]
-                val c = if (sel) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                val c = if (sel) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                 Column(Modifier.weight(1f).tap { onTab(t) }.padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(t.icon, t.label, tint = c)
-                    Text(t.label, color = c, style = MaterialTheme.typography.labelMedium)
+                    Icon(if (sel) t.icon else t.iconOff, t.label, tint = c)
+                    Text(t.label, color = c, style = MaterialTheme.typography.labelMedium, fontWeight = if (sel) androidx.compose.ui.text.font.FontWeight.SemiBold else null)
                 }
             }
         } else {
