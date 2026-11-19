@@ -78,8 +78,8 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     val bbcOn by vm.bbcEnabled.collectAsStateWithLifecycle()
     val bar = barIds.mapNotNull(Tab::of)
     // The home page is the first button that is a page (the second one when Search comes first).
-    val home = Tab.of(app.firsthand.data.BarOrder.home(barIds)) ?: Tab.ForYou
-    val tab = picked?.takeIf { it != Tab.Search && it in bar } ?: home
+    val homeTab = Tab.of(app.firsthand.data.BarOrder.home(barIds)) ?: Tab.ForYou
+    val tab = picked?.takeIf { it != Tab.Search && it in bar } ?: homeTab
     val aBreaking by vm.alertBreaking.collectAsStateWithLifecycle()
     val aOff by vm.alertOffSources.collectAsStateWithLifecycle()
     val aCats by vm.alertCategories.collectAsStateWithLifecycle()
