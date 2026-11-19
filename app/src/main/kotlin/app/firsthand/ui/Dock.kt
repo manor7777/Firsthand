@@ -12,7 +12,6 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Newspaper
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.Newspaper
@@ -58,7 +57,6 @@ fun GlassDock(
     query: String,
     onTab: (Tab) -> Unit,
     onSearch: () -> Unit,
-    onSettings: () -> Unit,
     onExit: () -> Unit,
     onQuery: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -70,14 +68,13 @@ fun GlassDock(
     ) {
         if (!searching) {
             // The tabs, then Search as a fourth button (it never stays selected: it turns the bar into the search field).
-            SlidingPill(hz, tabs.size + 2, tabs.indexOf(tab).coerceAtLeast(0), Modifier.weight(1f), height = 64.dp) { i, sel ->
-                if (i >= tabs.size) {
-                    // After the tabs: Search, then Settings. Neither stays selected; they open the search field / the settings page.
-                    val search = i == tabs.size
+            SlidingPill(hz, tabs.size + 1, tabs.indexOf(tab).coerceAtLeast(0), Modifier.weight(1f), height = 64.dp) { i, sel ->
+                if (i == tabs.size) {
+                    // After the tabs: Search. It never stays selected; it turns the bar into the search field.
                     val c = MaterialTheme.colorScheme.onSurfaceVariant
-                    Column(Modifier.weight(1f).tap(if (search) onSearch else onSettings).padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(if (search) Icons.Filled.Search else Icons.Filled.Settings, if (search) "Search" else "Settings", tint = c)
-                        Text(if (search) "Search" else "Settings", color = c, style = MaterialTheme.typography.labelMedium)
+                    Column(Modifier.weight(1f).tap(onSearch).padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Filled.Search, "Search", tint = c)
+                        Text("Search", color = c, style = MaterialTheme.typography.labelMedium)
                     }
                     return@SlidingPill
                 }

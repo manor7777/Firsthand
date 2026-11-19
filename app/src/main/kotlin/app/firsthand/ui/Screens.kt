@@ -95,7 +95,7 @@ private fun SectionLabel(t: String) =
 @Composable
 fun HomeScreen(
     hz: HazeState, breaking: List<Story>, mostRead: List<Story>, forYou: List<Story>, bbcOn: Boolean, breakingPage: Boolean,
-    refreshing: Boolean, onRefresh: () -> Unit, onOpen: (List<Story>, Int) -> Unit,
+    refreshing: Boolean, onRefresh: () -> Unit, onOpen: (List<Story>, Int) -> Unit, onSettings: () -> Unit,
 ) {
     val mode = if (bbcOn && breakingPage) 1 else 0 // 1 = Breaking; without BBC there is no Breaking page
     val headerH = 117.dp // title row and the chip row (the same height as My News, so the first section label sits at the same height on every tab)
@@ -149,7 +149,7 @@ fun HomeScreen(
         }
         EdgeScrim(hz, atTop = true, Modifier.align(Alignment.TopCenter).height(top + headerH))
         Column(Modifier.fillMaxWidth().padding(top = top + 4.dp)) {
-            PageHeaderRow(if (mode == 1) "Breaking" else "For you", Modifier.padding(horizontal = 12.dp))
+            PageHeaderRow(if (mode == 1) "Breaking" else "For you", Modifier.padding(horizontal = 12.dp)) { IconButton(onSettings) { Icon(Icons.Filled.Settings, "Settings") } }
             if (chips.isNotEmpty()) androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 item { GlassChip(hz, sel == null, "All") { picked = null } }
                 items(chips) { c -> GlassChip(hz, sel == c, c) { picked = c } }
@@ -266,7 +266,7 @@ fun SearchScreen(
 @Composable
 fun MyNewsScreen(
     hz: HazeState, selected: List<String>, topics: Map<String, List<Story>>, sources: List<Source>, bbcOn: Boolean,
-    onChange: (List<String>) -> Unit, onOpen: (List<Story>, Int) -> Unit,
+    onChange: (List<String>) -> Unit, onOpen: (List<Story>, Int) -> Unit, onSettings: () -> Unit,
 ) {
     var editing by rememberSaveable { mutableStateOf(false) }
     var filter by rememberSaveable { mutableStateOf<String?>(null) } // null = all sections
@@ -281,6 +281,7 @@ fun MyNewsScreen(
     Column(Modifier.fillMaxSize()) {
         PageHeaderRow("My News", Modifier.padding(horizontal = 12.dp).padding(top = top + 4.dp)) {
             IconButton({ editing = true }) { Icon(Icons.Filled.Edit, "Edit My News") }
+            IconButton(onSettings) { Icon(Icons.Filled.Settings, "Settings") }
         }
         androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             item { GlassChip(hz, active == null, "All") { filter = null } }

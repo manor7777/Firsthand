@@ -41,6 +41,7 @@ tap --card && { sleep 9; shot 02-article 2; back; }
 tap "My News" && { sleep 8; shot 03-my-news 2; }
 
 tap "Settings" && {
+  tap "Sources"                          # Settings opens on General; the sources are on the second tab
   scroll_to "News sources" && { adb shell input swipe $((W/2)) $((H*60/100)) $((W/2)) $((H*45/100)) 300; sleep 1; shot 05-sources 1; }
   tap "Add a source" && { shot 06-add-source 1.5; tap "Mirror" && tap "Not now"; }
   back                                   # leave Settings
