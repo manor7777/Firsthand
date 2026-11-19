@@ -68,6 +68,7 @@ object Sources {
         reach("bristolpost.co.uk", "Bristol Live", "Bristol News" to "news/bristol-news/"),
         reach("plymouthherald.co.uk", "Plymouth Live", "Plymouth News" to "news/plymouth-news/"),
         reach("hulldailymail.co.uk", "Hull Live", "Hull & East Yorkshire News" to "news/hull-east-yorkshire-news/"),
+        reach("nottinghampost.com", "Nottingham Post", "Local News" to "news/local-news/", "Music & Nightlife" to "whats-on/music-nightlife/"),
         reach("mylondon.news", "MyLondon", "London News" to "news/london-news/"),
         reach("kentlive.news", "KentLive"), reach("essexlive.news", "EssexLive"), reach("cornwalllive.com", "Cornwall Live"),
         reach("devonlive.com", "Devon Live"), reach("edinburghlive.co.uk", "Edinburgh Live"), reach("glasgowlive.co.uk", "Glasgow Live"),

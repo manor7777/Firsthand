@@ -282,6 +282,21 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
+            android:name=".link.nottingham_post"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Firsthand">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="nottinghampost.com" />
+                <data android:host="www.nottinghampost.com" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
             android:name=".link.mylondon"
             android:targetActivity=".MainActivity"
             android:enabled="false"
