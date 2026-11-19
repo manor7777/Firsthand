@@ -108,14 +108,14 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
             when {
                 searching -> SearchScreen(hz, query, pool, hits, vm::search, open)
-                tab == Tab.MyNews -> MyNewsScreen(hz, cats, topics, sources, bbcOn, vm::setCategories, open) { settingsOpen = true }
-                else -> HomeScreen(hz, home.breaking, home.mostRead, forYou, bbcOn, tab == Tab.Breaking, refreshing, vm::refresh, open) { settingsOpen = true }
+                tab == Tab.MyNews -> MyNewsScreen(hz, cats, topics, sources, bbcOn, vm::setCategories, open)
+                else -> HomeScreen(hz, home.breaking, home.mostRead, forYou, bbcOn, tab == Tab.Breaking, refreshing, vm::refresh, open)
             }
         }
         EdgeScrim(hz, atTop = false, Modifier.align(Alignment.BottomCenter).height(WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 150.dp))
         GlassDock(
             hz, tabs, tab, searching, query,
-            onTab = { picked = it }, onSearch = { searching = true },
+            onTab = { picked = it }, onSearch = { searching = true }, onSettings = { settingsOpen = true },
             onExit = { searching = false; query = "" }, onQuery = { query = it },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
