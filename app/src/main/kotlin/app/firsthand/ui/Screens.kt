@@ -235,7 +235,7 @@ fun SearchScreen(
     val local = remember(q, pool) { if (q.isEmpty()) pool.take(20) else pool.filter { (it.title + " " + it.summary + " " + it.category).lowercase().contains(q) } }
     // BBC search results first, then anything already loaded that matches.
     val results = remember(live, local) { ((live ?: emptyList()) + local).distinctBy { it.url } }
-    LazyColumn(Modifier.fillMaxSize().haze(hz), contentPadding = PaddingValues(14.dp, top + 16.dp, 14.dp, 130.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    LazyColumn(Modifier.fillMaxSize().imePadding().haze(hz), contentPadding = PaddingValues(14.dp, top + 16.dp, 14.dp, 100.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         item {
             Text(
                 when { q.isEmpty() -> "Recent stories"; waiting -> "Searching…"; else -> "${results.size} results" },

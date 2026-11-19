@@ -57,7 +57,7 @@ fun SettingsScreen(
     }
     BackHandlerCompat(onBack)
     // Settings are grouped into glass tabs (the same sliding pill as Home) so it isn't one long list.
-    val tabs = listOf("Sources", "Blocking", "Alerts", "General")
+    val tabs = listOf("Sources", "Links", "Blocking", "Alerts", "General")
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val hz = remember { HazeState() }
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -108,6 +108,8 @@ fun SettingsScreen(
                         enabled = feedUrl.isNotBlank() && !checking,
                     ) { Text(if (checking) "Checking…" else "Add feed") }
                     feedMsg?.let { Text(it, color = if (it.startsWith("Added")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error) }
+                        }
+                        1 -> {
                     Heading("Opening links")
                     Text("Open article links from BBC News and the publishers you've added (and Google share links to them) in Firsthand when you tap them elsewhere, such as in Google Discover. Android needs this switched on once: tap below, tap \"Add link\" and tick every address (the publishers' ones, plus share.google and search.app for links shared from Google). Android doesn't let unofficial apps switch this on themselves, and it only offers publishers you've added. If the official BBC News app is installed, turn its links off there. Feeds added by address can't be opened this way, but sharing one of their articles to Firsthand works.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -129,7 +131,7 @@ fun SettingsScreen(
                     }
                     Button({ ExternalBrowser.openDefaultLinkSettings(ctx) }) { Text("Open link settings") }
                         }
-                        1 -> {
+                        2 -> {
                     Heading("Blocked writers")
                     if (blocked.names.isEmpty()) Text("None. Block a writer from their page (tap their name under a headline).", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     else {
@@ -165,7 +167,7 @@ fun SettingsScreen(
                         }
                     }
                         }
-                        2 -> {
+                        3 -> {
                     AlertsTab(alerts) { status = it }
                         }
                         else -> {

@@ -112,7 +112,8 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
                 else -> HomeScreen(hz, home.breaking, home.mostRead, forYou, bbcOn, tab == Tab.Breaking, refreshing, vm::refresh, open)
             }
         }
-        EdgeScrim(hz, atTop = false, Modifier.align(Alignment.BottomCenter).height(WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 150.dp))
+        // While searching the bar rides above the keyboard, so the fade does too, and it is only as tall as the bar needs.
+        EdgeScrim(hz, atTop = false, Modifier.align(Alignment.BottomCenter).then(if (searching) Modifier.imePadding().height(110.dp) else Modifier.height(WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 150.dp)))
         GlassDock(
             hz, tabs, tab, searching, query,
             onTab = { picked = it }, onSearch = { searching = true }, onSettings = { settingsOpen = true },
