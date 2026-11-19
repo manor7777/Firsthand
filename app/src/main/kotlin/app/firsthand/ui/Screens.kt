@@ -150,10 +150,7 @@ fun HomeScreen(
         EdgeScrim(hz, atTop = true, Modifier.align(Alignment.TopCenter).height(top + headerH))
         Column(Modifier.fillMaxWidth().padding(top = top + 4.dp)) {
             PageHeaderRow(if (mode == 1) "Breaking" else "For you", Modifier.padding(horizontal = 12.dp)) { IconButton(onSettings) { Icon(Icons.Filled.Settings, "Settings") } }
-            if (chips.isNotEmpty()) androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                item { GlassChip(hz, sel == null, "All") { picked = null } }
-                items(chips) { c -> GlassChip(hz, sel == c, c) { picked = c } }
-            }
+            if (chips.isNotEmpty()) ChipRow(hz, listOf("All") + chips, if (sel == null) 0 else 1 + chips.indexOf(sel), { i -> picked = if (i == 0) null else chips[i - 1] })
         }
     }
 }
@@ -283,10 +280,7 @@ fun MyNewsScreen(
             IconButton({ editing = true }) { Icon(Icons.Filled.Edit, "Edit My News") }
             IconButton(onSettings) { Icon(Icons.Filled.Settings, "Settings") }
         }
-        androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            item { GlassChip(hz, active == null, "All") { filter = null } }
-            items(groups, key = { it.key }) { g -> GlassChip(hz, active?.key == g.key, g.title) { filter = g.key } }
-        }
+        ChipRow(hz, listOf("All") + groups.map { it.title }, if (active == null) 0 else 1 + groups.indexOfFirst { it.key == active.key }, { i -> filter = if (i == 0) null else groups[i - 1].key })
         LazyColumn(
             Modifier.fillMaxSize().haze(hz),
             contentPadding = PaddingValues(14.dp, 8.dp, 14.dp, 110.dp),

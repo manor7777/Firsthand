@@ -21,6 +21,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -106,10 +109,37 @@ private fun Modifier.lensHighlight(): Modifier = drawWithCache {
     onDrawWithContent { drawContent(); brush?.let { drawRect(it) } }
 }
 
+private val bubbleLead = spring<Float>(dampingRatio = 0.62f, stiffness = Spring.StiffnessMedium)
+private val bubbleTrail = spring<Float>(dampingRatio = 0.8f, stiffness = Spring.StiffnessLow)
+
+/**
+ * Draws the droplet highlight between [x0] and [x1] (pixels). [rest] is its width when settled on one item: stretched beyond that
+ * it becomes two rounded ends joined by a thinner waist, like a bubble pulling apart, and glows a little brighter.
+ */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawBubble(x0: Float, x1: Float, top: Float, h: Float, rest: Float, color: Color) {
+    val stretch = ((x1 - x0 - rest) / rest.coerceAtLeast(1f)).coerceIn(0f, 1.6f)
+    val corner = CornerRadius(h)
+    val shape = androidx.compose.ui.graphics.Path()
+    if (stretch < 0.05f) {
+        shape.addRoundRect(androidx.compose.ui.geometry.RoundRect(x0, top, x1, top + h, corner))
+    } else {
+        val cap = rest
+        val waist = h * (1f - 0.3f * (stretch / 1.6f).coerceIn(0f, 1f)) / 2f
+        val mid = top + h / 2f
+        val a = androidx.compose.ui.graphics.Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(x0, top, x0 + cap, top + h, corner)) }
+        val b = androidx.compose.ui.graphics.Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(x1 - cap, top, x1, top + h, corner)) }
+        val bridge = androidx.compose.ui.graphics.Path().apply { addRect(androidx.compose.ui.geometry.Rect(x0 + cap / 2f, mid - waist, x1 - cap / 2f, mid + waist)) }
+        val ab = androidx.compose.ui.graphics.Path.combine(androidx.compose.ui.graphics.PathOperation.Union, a, b)
+        shape.addPath(androidx.compose.ui.graphics.Path.combine(androidx.compose.ui.graphics.PathOperation.Union, ab, bridge))
+    }
+    drawPath(shape, color.copy(alpha = 0.13f + 0.07f * (stretch / 1.6f)))
+    drawPath(shape, color.copy(alpha = 0.12f), style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
+}
+
 /**
  * Glass pill with a droplet highlight. Moving to another item stretches it like a bubble pulling apart: the edge on the
- * side it is heading to runs ahead, the other edge lags and then catches up, with a thinning "neck" in between while
- * stretched, and it settles with a little bounce. While an item is being dragged, [position] places it directly instead.
+ * side it is heading to runs ahead, the other edge lags and then catches up, and it settles with a little bounce.
+ * While an item is being dragged, [position] places it directly instead.
  */
 @Composable
 fun SlidingPill(
@@ -126,11 +156,8 @@ fun SlidingPill(
 ) {
     val last = remember { intArrayOf(selected) }
     val goingRight = remember(selected) { (selected >= last[0]).also { last[0] = selected } }
-    val lead = spring<Float>(dampingRatio = 0.62f, stiffness = Spring.StiffnessMedium)
-    val trail = spring<Float>(dampingRatio = 0.8f, stiffness = Spring.StiffnessLow)
-    val leftSlot by animateFloatAsState(selected.toFloat(), if (goingRight) trail else lead, label = "pillLeft")
-    val rightSlot by animateFloatAsState(selected + 1f, if (goingRight) lead else trail, label = "pillRight")
-    // A quiet frosted highlight, not a solid accent block: lighter glass inside the bar.
+    val leftSlot by animateFloatAsState(selected.toFloat(), if (goingRight) bubbleTrail else bubbleLead, label = "pillLeft")
+    val rightSlot by animateFloatAsState(selected + 1f, if (goingRight) bubbleLead else bubbleTrail, label = "pillRight")
     val onSurface = MaterialTheme.colorScheme.onSurface
     val pad = with(androidx.compose.ui.platform.LocalDensity.current) { 5.dp.toPx() }
     Row(
@@ -138,31 +165,40 @@ fun SlidingPill(
             val w = size.width / count
             val l = position ?: leftSlot
             val r = if (position != null) position + 1f else rightSlot
-            val stretch = (r - l - 1f).coerceIn(0f, 1.6f) // how far the droplet is pulled out beyond one slot
-            val x0 = l * w + pad
-            val x1 = r * w - pad
-            val h = size.height - 2 * pad
-            val corner = CornerRadius(size.height)
-            val shape = androidx.compose.ui.graphics.Path()
-            val cap = w - 2 * pad
-            if (stretch < 0.05f || x1 - x0 <= cap * 1.05f) {
-                shape.addRoundRect(androidx.compose.ui.geometry.RoundRect(x0, pad, x1, pad + h, corner))
-            } else {
-                // Two rounded ends joined by a thinner waist: the bubble separating.
-                val waist = h * (1f - 0.3f * (stretch / 1.6f).coerceIn(0f, 1f)) / 2f
-                val mid = pad + h / 2f
-                val a = androidx.compose.ui.graphics.Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(x0, pad, x0 + cap, pad + h, corner)) }
-                val b = androidx.compose.ui.graphics.Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(x1 - cap, pad, x1, pad + h, corner)) }
-                val bridge = androidx.compose.ui.graphics.Path().apply { addRect(androidx.compose.ui.geometry.Rect(x0 + cap / 2f, mid - waist, x1 - cap / 2f, mid + waist)) }
-                val ab = androidx.compose.ui.graphics.Path.combine(androidx.compose.ui.graphics.PathOperation.Union, a, b)
-                shape.addPath(androidx.compose.ui.graphics.Path.combine(androidx.compose.ui.graphics.PathOperation.Union, ab, bridge))
-            }
-            // Brighter while it is stretched, like light gathering in the bubble.
-            drawPath(shape, onSurface.copy(alpha = 0.13f + 0.07f * (stretch / 1.6f)))
-            drawPath(shape, onSurface.copy(alpha = 0.12f), style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
+            drawBubble(l * w + pad, r * w - pad, pad, size.height - 2 * pad, w - 2 * pad, onSurface)
         },
         verticalAlignment = Alignment.CenterVertically,
     ) { for (i in 0 until count) androidx.compose.runtime.key(keys?.getOrNull(i) ?: i) { item(i, i == selected) } }
+}
+
+/**
+ * A scrolling row of glass chips with the same droplet highlight as [SlidingPill]: it slides to the chip you tap, stretching
+ * like a bubble. The highlight is drawn over the chips as a light tint, so it shows across the ones it passes.
+ */
+@Composable
+fun ChipRow(hz: HazeState, labels: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val scroll = androidx.compose.foundation.rememberScrollState()
+    val spots = remember { androidx.compose.runtime.mutableStateMapOf<Int, Pair<Float, Float>>() } // chip index -> left, width (px)
+    val sel = selected.coerceIn(0, (labels.size - 1).coerceAtLeast(0))
+    val last = remember { intArrayOf(sel) }
+    val goingRight = remember(sel) { (sel >= last[0]).also { last[0] = sel } }
+    val spot = spots[sel]
+    val left by animateFloatAsState(spot?.first ?: 0f, if (goingRight) bubbleTrail else bubbleLead, label = "chipLeft")
+    val right by animateFloatAsState(spot?.let { it.first + it.second } ?: 0f, if (goingRight) bubbleLead else bubbleTrail, label = "chipRight")
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    androidx.compose.foundation.layout.Row(
+        modifier.padding(vertical = 4.dp).horizontalScroll(scroll).drawWithContent {
+            drawContent()
+            if (spot != null) drawBubble(left, right, 0f, size.height, spot.second, onSurface)
+        },
+        horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Spacer(Modifier.width(8.dp)) // with the 8dp spacing this is the 16dp screen margin, inside the scrolling area
+        labels.forEachIndexed { i, label ->
+            GlassChip(hz, i == sel, label, Modifier.onPlaced { spots[i] = it.positionInParent().x to it.size.width.toFloat() }) { onSelect(i) }
+        }
+        Spacer(Modifier.width(8.dp))
+    }
 }
 
 /** A tap with no press ripple: on the glass pills and chips the square ripple showed up before the press had finished. */
@@ -186,13 +222,11 @@ fun PageHeaderRow(
     }
 }
 
-/** A filter chip in the same glass style as the pills and dock: frosted when off, the accent colour when on. */
+/** A filter chip in the same glass style as the pills and dock. The "selected" look is the droplet [ChipRow] draws over it. */
 @Composable
-fun GlassChip(hz: HazeState, selected: Boolean, label: String, onClick: () -> Unit) {
-    val shape = CircleShape
+fun GlassChip(hz: HazeState, selected: Boolean, label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
-        Modifier.heightIn(min = 40.dp).let { if (selected) it.clip(shape).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f)).border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f), shape) else it.glass(hz, shape) }
-            .tap(onClick).padding(horizontal = 18.dp),
+        modifier.heightIn(min = 40.dp).glass(hz, CircleShape).tap(onClick).padding(horizontal = 18.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(label, fontWeight = FontWeight.SemiBold, maxLines = 1, style = MaterialTheme.typography.labelLarge,
