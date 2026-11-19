@@ -26,6 +26,7 @@ import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
@@ -202,7 +203,7 @@ fun ChipRow(hz: HazeState, labels: List<String>, selected: Int, onSelect: (Int) 
 }
 
 /** A tap with no press ripple: on the glass pills and chips the square ripple showed up before the press had finished. */
-fun Modifier.tap(onClick: () -> Unit): Modifier = androidx.compose.ui.composed {
+fun Modifier.tap(onClick: () -> Unit): Modifier = this.composed {
     clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onClick)
 }
 
