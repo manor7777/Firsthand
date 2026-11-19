@@ -55,7 +55,7 @@ Article links from every source you've added open in Firsthand's native reader. 
 
 Android 12+ never auto-routes unverified web links to an app, and Android can't be told about new domains while an app is running, so this works in two steps:
 1. The app declares each built-in source's domains in its manifest as a *disabled* alias, and enables the alias when you add that source (and disables it when you remove it). That is what makes the source appear in Android's list. After you add a source the app offers to take you to the right screen.
-2. You switch it on once: **Settings > Opening links > Open link settings** (or system Settings > Apps > Firsthand > Open by default), turn on *Open supported links*, tap *Add link* and tick the addresses. If another app from the same publisher is installed, turn off its links there.
+2. You switch it on once: **Settings > Links > Open link settings** (or system Settings > Apps > Firsthand > Open by default), turn on *Open supported links*, tap *Add link* and tick the addresses. If another app from the same publisher is installed, turn off its links there.
 
 Any other website can be shared to Firsthand and is read the same way (*Read shared websites*); its name in the story is taken from its address.
 
