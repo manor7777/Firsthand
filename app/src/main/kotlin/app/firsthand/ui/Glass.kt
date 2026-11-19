@@ -165,7 +165,10 @@ fun SlidingPill(
     ) { for (i in 0 until count) androidx.compose.runtime.key(keys?.getOrNull(i) ?: i) { item(i, i == selected) } }
 }
 
-fun Modifier.tap(onClick: () -> Unit) = clickable(onClick = onClick)
+/** A tap with no press ripple: on the glass pills and chips the square ripple showed up before the press had finished. */
+fun Modifier.tap(onClick: () -> Unit): Modifier = androidx.compose.ui.composed {
+    clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onClick)
+}
 
 /** The title row every top-level page shares (same type size, height and icon position), so the pages line up when you switch between them. */
 @Composable
