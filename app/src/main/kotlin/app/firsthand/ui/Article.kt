@@ -185,8 +185,13 @@ internal fun imageKey(u: String) = u.substringBefore('?').substringAfterLast('/'
 
 /** The body image (in the first few blocks) that is the same photo as the story's lead image, if any. */
 internal fun leadDuplicate(lead: String?, blocks: List<Block>?): IndexedValue<Block>? {
-    val k = lead?.let(::imageKey)?.takeIf { it.length >= 8 } ?: return null
-    return blocks?.withIndex()?.firstOrNull { (i, b) -> i < 4 && b is Block.Image && imageKey(b.url) == k }
+    if (lead.isNullOrBlank() || blocks == null) return null
+    val k = imageKey(lead).takeIf { it.length >= 8 }
+    val byId = k?.let { blocks.withIndex().firstOrNull { (i, b) -> i < 4 && b is Block.Image && imageKey(b.url) == k } }
+    if (byId != null) return byId
+    // Some stories carry the same photo under a different file ID in the feed and the page. A body that opens
+    // straight with an image is BBC's lead photo again, so treat it as the duplicate.
+    return blocks.firstOrNull()?.takeIf { it is Block.Image }?.let { IndexedValue(0, it) }
 }
 
 /** Topic tags: tap opens the topic's page (follow from there); a tick marks topics you already follow. */
