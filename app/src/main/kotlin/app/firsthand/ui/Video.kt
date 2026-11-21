@@ -98,16 +98,21 @@ fun VideoPage(s: Story, support: VideoSupport, visible: Boolean, follows: List<S
 
 /** Media3 HLS player; reports playback errors so the caller can fall back to BBC's page player. */
 @Composable
-private fun HlsPlayer(url: String, modifier: Modifier, onError: () -> Unit) {
+private fun HlsPlayer(url: String, modifier: Modifier, onSize: (Float) -> Unit = {}, onError: () -> Unit) {
     val ctx = LocalContext.current
     val player = remember(url) {
         ExoPlayer.Builder(ctx).build().apply {
-            setMediaItem(MediaItem.Builder().setUri(url).setMimeType(MimeTypes.APPLICATION_M3U8).build())
+            setMediaItem(MediaItem.Builder().setUri(url).apply { if (".m3u8" in url) setMimeType(MimeTypes.APPLICATION_M3U8) }.build())
             prepare(); playWhenReady = true
         }
     }
     DisposableEffect(player) {
-        val l = object : Player.Listener { override fun onPlayerError(error: PlaybackException) { onError() } }
+        val l = object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) { onError() }
+            override fun onVideoSizeChanged(size: androidx.media3.common.VideoSize) {
+                if (size.width > 0 && size.height > 0) onSize(size.width * size.pixelWidthHeightRatio / size.height)
+            }
+        }
         player.addListener(l)
         onDispose { player.removeListener(l); player.release() }
     }
@@ -115,4 +120,37 @@ private fun HlsPlayer(url: String, modifier: Modifier, onError: () -> Unit) {
         { c -> (android.view.LayoutInflater.from(c).inflate(app.firsthand.R.layout.player_view, null) as PlayerView).apply { this.player = player } },
         modifier.clipToBounds(),
     )
+}
+
+/** Whether the reader page holding this view is the one on screen (so a video stops when you swipe away or open another page). */
+internal val LocalPageVisible = compositionLocalOf { true }
+
+/**
+ * A video found on a web page: poster with a play button, then a native player. Fits the clip's real shape once it is known
+ * (portrait clips are capped to 60% of the screen height). If the stream won't play, offers the page in the browser.
+ */
+@Composable
+internal fun VideoBlockView(v: app.firsthand.data.Block.Video, pageUrl: String) {
+    val visible = LocalPageVisible.current
+    var playing by remember(v.url) { mutableStateOf(false) }
+    var failed by remember(v.url) { mutableStateOf(false) }
+    var ratio by remember(v.url) { mutableFloatStateOf(16f / 9f) }
+    LaunchedEffect(visible) { if (!visible) playing = false }
+    val ctx = LocalContext.current
+    BoxWithConstraints(Modifier.fillMaxWidth().background(Color.Black).clipToBounds(), contentAlignment = Alignment.Center) {
+        val screenH = LocalConfiguration.current.screenHeightDp.dp
+        val h = minOf(maxWidth / ratio, screenH * 0.6f)
+        val frame = Modifier.size(minOf(maxWidth, h * ratio), h)
+        if (playing && !failed) HlsPlayer(v.url, frame, onSize = { ratio = it.coerceIn(0.4f, 2.4f) }) { failed = true; playing = false }
+        else Box(frame.clickable { failed = false; playing = true }, Alignment.Center) {
+            v.poster?.let { AsyncImage(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
+            Box(Modifier.size(72.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.55f)), Alignment.Center) {
+                Icon(Icons.Filled.PlayArrow, "Play video", Modifier.size(44.dp), tint = Color.White)
+            }
+        }
+    }
+    if (failed) Row(Modifier.padding(20.dp, 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("Couldn't play this video here.", Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        FilledTonalButton({ app.firsthand.platform.ExternalBrowser.open(ctx, pageUrl) }) { Text("Open original") }
+    }
 }

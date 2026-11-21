@@ -172,4 +172,19 @@ class SourcesTest {
         assertEquals("Theregister", Sources.siteName("https://www.theregister.com/x/y"))
         assertEquals("Blog", Sources.siteName("https://amp.blog.com/p"))
     }
+
+    @Test fun pageVideoFromJsonLd() {
+        val html = """<html><head><meta property="og:image" content="https://img.example.com/og.jpg"/>
+            <script type="application/ld+json">{"@context":"http://schema.org","@type":"VideoObject","name":"Gamers celebrate","description":"Gamers celebrate",
+            "thumbnailUrl":"https://img.example.com/t.jpg","contentUrl":"https://cdn.example.com/v/abs/index.m3u8?format=redirect","duration":"PT1M12S",
+            "url":"https://www.example.com/video/shorts/gamers-1"}</script></head><body><main><p>x</p></main></body></html>"""
+        val p = ExternalArticle.parse(html, "https://www.example.com/video/shorts/gamers-1?playlist=a", "Example")
+        assertEquals(Block.Video("https://cdn.example.com/v/abs/index.m3u8?format=redirect", "https://img.example.com/t.jpg", 72), p.blocks.single())
+    }
+
+    @Test fun pageVideoFromVideoTagAndPlainPageHasNone() {
+        val tag = """<html><body><video poster="/p.jpg"><source src="/clip.mp4" type="video/mp4"></video></body></html>"""
+        assertEquals(Block.Video("https://www.example.com/clip.mp4", "https://www.example.com/p.jpg", null), ExternalArticle.parse(tag, "https://www.example.com/a/b", null).blocks.single())
+        assertTrue(ExternalArticle.parse("<html><body><p>hi</p></body></html>", "https://www.example.com/a/b", null).blocks.isEmpty())
+    }
 }

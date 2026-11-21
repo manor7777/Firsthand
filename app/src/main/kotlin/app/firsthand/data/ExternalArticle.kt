@@ -22,7 +22,8 @@ object ExternalArticle {
 
     fun parse(html: String, url: String, source: String?): Parsed {
         val doc = Jsoup.parse(html, url)
-        val ld = ldJson(doc)
+        val all = ldAll(doc)
+        val ld = all.filter(::isArticle)
         val body = doc.body() ?: return Parsed(emptyList(), emptyList(), null, null)
         var blocks = extract(container(body))
         if (!readable(blocks)) {
@@ -32,8 +33,15 @@ object ExternalArticle {
         }
         val authors = ld.flatMap { authorsOf(it["author"]) }.flatMap { RssParser.splitNames(it) }
             .map { it.copy(source = source) }.distinctBy { Author.key(it.name) }
+        val video = findVideo(doc, all, url)
+        val text = if (readable(blocks)) blocks else emptyList()
+        // A page that is mostly a video: the player, then the text if there is any, else the page's description.
+        val described = if (text.isEmpty() && video != null) listOfNotNull(
+            (all.firstNotNullOfOrNull { it.str("description") } ?: doc.selectFirst("meta[property=og:description]")?.attr("content"))
+                ?.trim()?.takeIf { it.length >= 40 && !it.equals(all.firstNotNullOfOrNull { o -> o.str("name") ?: o.str("headline") }, true) }?.let { Block.Paragraph(it) }
+        ) else emptyList()
         return Parsed(
-            if (readable(blocks)) blocks else emptyList(), authors,
+            listOfNotNull(video) + text + described, authors,
             ld.firstNotNullOfOrNull { it.str("datePublished") }?.let(::iso), ld.firstNotNullOfOrNull { it.str("dateModified") }?.let(::iso),
         )
     }
@@ -50,8 +58,42 @@ object ExternalArticle {
     private fun JsonElement?.str(): String? = (this as? JsonPrimitive)?.takeIf { it.isString }?.content
     private fun JsonObject.str(k: String): String? = this[k].str()
 
-    /** NewsArticle-ish objects from every JSON-LD script on the page (handles @graph and arrays). */
-    private fun ldJson(doc: org.jsoup.nodes.Document): List<JsonObject> {
+    private fun isArticle(o: JsonObject) =
+        o.str("@type")?.contains("Article", true) == true || (o["@type"] as? JsonArray)?.any { it.str()?.contains("Article", true) == true } == true
+
+    private fun isVideoObject(o: JsonObject) =
+        o.str("@type")?.contains("VideoObject", true) == true || (o["@type"] as? JsonArray)?.any { it.str()?.contains("VideoObject", true) == true } == true
+
+    private val streamExt = Regex("(?i)\\.(m3u8|mp4|webm|mov|m4v)(\\?|#|$)")
+
+    /**
+     * The page's own video as a direct address, from the standard places: a schema.org VideoObject's contentUrl, a `<video>` tag
+     * (or its `<source>`), or an og:video meta tag that points at a file. Embed-only players (YouTube and the like) are not found.
+     */
+    internal fun findVideo(doc: org.jsoup.nodes.Document, ld: List<JsonObject>, pageUrl: String): Block.Video? {
+        fun abs(u: String?) = u?.trim()?.takeIf { it.isNotEmpty() }?.let { runCatching { java.net.URI(pageUrl).resolve(it).toString() }.getOrNull() }
+            ?.takeIf { it.startsWith("https://") || it.startsWith("http://") }
+        fun image(e: JsonElement?): String? = when (e) {
+            is JsonPrimitive -> e.str(); is JsonArray -> e.firstNotNullOfOrNull { image(it) }; is JsonObject -> e.str("url") ?: e.str("contentUrl"); else -> null
+        }
+        val objs = ld.filter(::isVideoObject)
+        val o = objs.firstOrNull { abs(it.str("contentUrl")) != null && it.str("url")?.substringBefore('?') == pageUrl.substringBefore('?') }
+            ?: objs.firstOrNull { abs(it.str("contentUrl")) != null }
+        val tag = doc.selectFirst("video[src], video source[src]")
+        val metaUrl = doc.select("meta[property]").filter { it.attr("property") in setOf("og:video", "og:video:url", "og:video:secure_url") }.mapNotNull { m ->
+            val v = abs(m.attr("content")) ?: return@mapNotNull null
+            val type = doc.selectFirst("meta[property=og:video:type]")?.attr("content").orEmpty()
+            v.takeIf { streamExt.containsMatchIn(it) || type.startsWith("video/") }
+        }.firstOrNull()
+        val url = abs(o?.str("contentUrl")) ?: abs(tag?.attr("src"))?.takeIf { !it.startsWith("blob:") } ?: metaUrl ?: return null
+        val poster = abs(image(o?.get("thumbnailUrl"))) ?: abs(doc.selectFirst("video[poster]")?.attr("poster"))
+            ?: abs(doc.selectFirst("meta[property=og:image]")?.attr("content"))
+        val dur = o?.str("duration")?.let { runCatching { java.time.Duration.parse(it).seconds.toInt() }.getOrNull() }
+        return Block.Video(url, poster, dur)
+    }
+
+    /** Every JSON-LD object on the page (handles @graph and arrays). */
+    private fun ldAll(doc: org.jsoup.nodes.Document): List<JsonObject> {
         val out = ArrayList<JsonObject>()
         fun walk(e: JsonElement) {
             when (e) {
@@ -61,7 +103,7 @@ object ExternalArticle {
             }
         }
         for (s in doc.select("script[type=application/ld+json]")) runCatching { walk(Json.parseToJsonElement(s.data())) }
-        return out.filter { o -> o.str("@type")?.contains("Article", true) == true || (o["@type"] as? JsonArray)?.any { it.str()?.contains("Article", true) == true } == true }
+        return out
     }
 
     private fun authorsOf(e: JsonElement?): List<String> = when (e) {

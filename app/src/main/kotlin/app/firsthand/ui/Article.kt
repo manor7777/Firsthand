@@ -73,6 +73,7 @@ fun ArticlePager(
             HorizontalPager(pager, Modifier.fillMaxSize().haze(hz), beyondViewportPageCount = 1) { p ->
                 val s = stories[p]
                 LaunchedEffect(s.url) { if (DeepLinks.parse(s.url) is DeepLinks.Link.Video) video.load(s) else load(s) }
+                CompositionLocalProvider(LocalPageVisible provides (pager.currentPage == p && isTop), LocalPageUrl provides s.url) {
                 SelectionContainer {
                     when {
                         s.isLive -> LivePage(s, live[s.url], loadLive, pager.currentPage == p)
@@ -80,6 +81,7 @@ fun ArticlePager(
                             VideoPage(s, video, pager.currentPage == p && isTop, follows, onTopic)
                         else -> ArticlePage(s, blocks[s.url], topics[s.url].orEmpty(), follows, info[s.url], onAuthor, onTopic)
                     }
+                }
                 }
             }
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -149,9 +151,13 @@ private fun ArticlePage(
     // The lead photo usually appears twice: as the story's image (feed thumbnail, or BBC's "BBC NEWS"-branded share image
     // for links) and as the first body image. Match them by file ID and show it once, preferring the clean body copy.
     val dup = leadDuplicate(s.imageUrl, blocks)
-    val hero = (dup?.value as? Block.Image)?.url ?: s.imageUrl
+    val lead = blocks?.firstOrNull() as? Block.Video
+    val hero = if (lead != null) null else (dup?.value as? Block.Image)?.url ?: s.imageUrl
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 48.dp)) {
-        item { hero?.let { AsyncImage(it, null, Modifier.fillMaxWidth().height(260.dp), contentScale = ContentScale.Crop) } ?: Spacer(Modifier.height(readerTopInset())) }
+        item {
+            if (lead != null) { Spacer(Modifier.height(readerTopInset())); VideoBlockView(lead, s.url) }
+            else hero?.let { AsyncImage(it, null, Modifier.fillMaxWidth().height(260.dp), contentScale = ContentScale.Crop) } ?: Spacer(Modifier.height(readerTopInset()))
+        }
         item {
             Column(Modifier.padding(20.dp, 18.dp, 20.dp, 4.dp)) {
                 Text(s.title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
@@ -171,7 +177,7 @@ private fun ArticlePage(
                 }
             }
             else -> {
-                val body = if (dup == null) blocks else blocks.filterIndexed { i, _ -> i != dup.index }
+                val body = if (lead != null) blocks.drop(1) else if (dup == null) blocks else blocks.filterIndexed { i, _ -> i != dup.index }
                 (dup?.value as? Block.Image)?.caption?.let { cap ->
                     item { Text(cap, Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
@@ -253,6 +259,7 @@ private fun relative(t: java.time.Instant): String {
 }
 
 /** Opens a tapped link inside the reader (BBC pages) or the browser; provided by AppRoot. */
+internal val LocalPageUrl = compositionLocalOf { "" }
 internal val LocalOpenLink = compositionLocalOf<(String) -> Unit> { {} }
 
 @Composable
@@ -271,6 +278,7 @@ internal fun BlockView(b: Block) {
         is Block.Quote -> Text(b.text, pad, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
         is Block.Image -> AsyncImage(b.url, b.caption, Modifier.fillMaxWidth().padding(vertical = 8.dp), contentScale = ContentScale.FillWidth)
         is Block.Embed -> InlineEmbed(b.url)
+        is Block.Video -> VideoBlockView(b, LocalPageUrl.current)
     }
 }
 

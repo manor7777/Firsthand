@@ -36,6 +36,8 @@ sealed interface Block {
     /** A paragraph that is entirely a link (e.g. a video page's "More on this story"): tapping opens [url]. */
     data class Link(val text: String, val url: String) : Block
     data class Image(val url: String, val caption: String?) : Block
+    /** A video found on a web page (schema.org VideoObject, <video> tag or og:video): [url] is a direct HLS/MP4 address. */
+    data class Video(val url: String, val poster: String?, val durationSec: Int?) : Block
     /** Interactive/video/unknown block: shown as an inline embed (WebView) or link. */
     data class Embed(val url: String) : Block
 }
