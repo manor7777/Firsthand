@@ -28,6 +28,14 @@ class ParserTest {
         assertTrue(h.breaking.any { it.imageUrl != null })
     }
 
+    @Test fun wholeParagraphLinkBecomesLinkBlock() {
+        val json = """[{"type":"paragraph","model":{"text":"More on this story.","blocks":[{"type":"urlLink","model":{"text":"More on this story.","blocks":[{"type":"fragment","model":{"text":"More on this story.","attributes":[]}}],"locator":"/news/articles/c5lyk0e3n1jxo","isExternal":false}}]}},
+            {"type":"paragraph","model":{"text":"Read the report here.","blocks":[{"type":"fragment","model":{"text":"Read the ","attributes":[]}},{"type":"urlLink","model":{"text":"report","locator":"/news/articles/x","blocks":[]}}]}}]"""
+        val out = ArticleParser.convert(kotlinx.serialization.json.Json.parseToJsonElement(json) as kotlinx.serialization.json.JsonArray, "https://www.bbc.co.uk/news/videos/x")
+        assertEquals(Block.Link("More on this story.", "https://www.bbc.co.uk/news/articles/c5lyk0e3n1jxo"), out[0])
+        assertTrue(out[1] is Block.Paragraph) // a link inside a sentence stays plain text
+    }
+
     @Test fun video() {
         val v = VideoParser.parse(fx("video.html"), "https://www.bbc.co.uk/news/videos/c3j4r9jgkynzo")!!
         assertEquals("Watch: What's in the Milburn review?", v.title)
@@ -36,8 +44,6 @@ class ParserTest {
         assertEquals(119, v.durationSec)
         assertTrue(v.summary.filterIsInstance<Block.Paragraph>().first().text.startsWith("A government-backed review"))
         assertTrue(v.poster!!.startsWith("https://ichef.bbci.co.uk/"))
-        // "More on this story." is a link to the written article
-        assertEquals(Block.Link("More on this story.", "https://www.bbc.co.uk/news/articles/c5lyk0e3n1jxo"), v.summary.filterIsInstance<Block.Link>().single())
     }
 
     @Test fun weatherArticle() {
