@@ -36,6 +36,8 @@ class ParserTest {
         assertEquals(119, v.durationSec)
         assertTrue(v.summary.filterIsInstance<Block.Paragraph>().first().text.startsWith("A government-backed review"))
         assertTrue(v.poster!!.startsWith("https://ichef.bbci.co.uk/"))
+        // "More on this story." is a link to the written article
+        assertEquals(Block.Link("More on this story.", "https://www.bbc.co.uk/news/articles/c5lyk0e3n1jxo"), v.summary.filterIsInstance<Block.Link>().single())
     }
 
     @Test fun weatherArticle() {

@@ -18,6 +18,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import app.firsthand.platform.ExternalBrowser
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.activity.compose.BackHandler
@@ -250,11 +252,21 @@ private fun relative(t: java.time.Instant): String {
     }
 }
 
+/** Opens a tapped link inside the reader (BBC pages) or the browser; provided by AppRoot. */
+internal val LocalOpenLink = compositionLocalOf<(String) -> Unit> { {} }
+
 @Composable
 internal fun BlockView(b: Block) {
     val pad = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
     when (b) {
         is Block.Paragraph -> Text(b.text, pad, style = MaterialTheme.typography.bodyLarge.copy(lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2f))
+        is Block.Link -> {
+            val open = LocalOpenLink.current
+            Text(
+                b.text, pad.clickable { open(b.url) }, color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2f, textDecoration = TextDecoration.Underline),
+            )
+        }
         is Block.Heading -> Text(b.text, pad.padding(top = 10.dp), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         is Block.Quote -> Text(b.text, pad, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
         is Block.Image -> AsyncImage(b.url, b.caption, Modifier.fillMaxWidth().padding(vertical = 8.dp), contentScale = ContentScale.FillWidth)

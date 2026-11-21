@@ -33,6 +33,8 @@ sealed interface Block {
     data class Heading(val text: String) : Block
     data class Paragraph(val text: String) : Block
     data class Quote(val text: String) : Block
+    /** A paragraph that is entirely a link (e.g. a video page's "More on this story"): tapping opens [url]. */
+    data class Link(val text: String, val url: String) : Block
     data class Image(val url: String, val caption: String?) : Block
     /** Interactive/video/unknown block: shown as an inline embed (WebView) or link. */
     data class Embed(val url: String) : Block

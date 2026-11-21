@@ -22,6 +22,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.firsthand.AppViewModel
 import app.firsthand.data.Categories
+import app.firsthand.data.DeepLinks
+import app.firsthand.platform.ExternalBrowser
 import app.firsthand.data.Story
 import dev.chrisbanes.haze.HazeState
 
@@ -108,7 +110,12 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
 
     BackHandler(enabled = searching && stack.isEmpty()) { searching = false; query = "" }
 
-    CompositionLocalProvider(LocalShowSource provides showSource) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val openLink: (String) -> Unit = { url ->
+        val link = DeepLinks.parse(url)?.takeIf { bbcOn && it !is DeepLinks.Link.Unsupported }
+        if (link != null) vm.openLink(link) else ExternalBrowser.open(ctx, url)
+    }
+    CompositionLocalProvider(LocalShowSource provides showSource, LocalOpenLink provides openLink) {
     Box(Modifier.fillMaxSize()) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
             when {

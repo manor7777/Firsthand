@@ -82,7 +82,7 @@ object ArticleParser {
             val type = o.str("type") ?: continue
             val m = o["model"] as? JsonObject ?: continue
             when {
-                type == "paragraph" -> text(m).takeIf { it.isNotBlank() }?.let { out += Block.Paragraph(it) }
+                type == "paragraph" -> text(m).takeIf { it.isNotBlank() }?.let { t -> out += wholeLink(m, t) ?: Block.Paragraph(t) }
                 type == "fragment" -> m.str("text")?.trim()?.takeIf { it.isNotEmpty() }?.let { out += Block.Paragraph(it) }
                 type in setOf("subheadline", "crosshead", "subheading") -> text(m).takeIf { it.isNotBlank() }?.let { out += Block.Heading(it) }
                 type == "text" -> (m["blocks"] as? JsonArray)?.let { out += convert(it, url) }
@@ -98,6 +98,15 @@ object ArticleParser {
             }
         }
         return out
+    }
+
+    /** The paragraph as a [Block.Link] when its only content is one BBC link (urlLink with a locator), else null. */
+    private fun wholeLink(m: JsonObject, text: String): Block.Link? {
+        val kids = (m["blocks"] as? JsonArray)?.mapNotNull { it as? JsonObject } ?: return null
+        val link = kids.singleOrNull()?.takeIf { it.str("type") == "urlLink" } ?: return null
+        val loc = (link["model"] as? JsonObject)?.str("locator")?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        val url = if (loc.startsWith("/")) "https://www.bbc.co.uk$loc" else loc
+        return Block.Link(text, url).takeIf { url.startsWith("https://") || url.startsWith("http://") }
     }
 
     private fun image(m: JsonObject): Block.Image? {
