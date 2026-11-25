@@ -187,4 +187,29 @@ class SourcesTest {
         assertEquals(Block.Video("https://www.example.com/clip.mp4", "https://www.example.com/p.jpg", null), ExternalArticle.parse(tag, "https://www.example.com/a/b", null).blocks.single())
         assertTrue(ExternalArticle.parse("<html><body><p>hi</p></body></html>", "https://www.example.com/a/b", null).blocks.isEmpty())
     }
+
+    private val longText = (1..4).joinToString("") { "<p>" + "This is a long enough paragraph of real article text, number $it. ".repeat(4) + "</p>" }
+
+    @Test fun instagramPostsBecomeEmbeds() {
+        val html = """<html><body><article>$longText
+            <blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/p/DAbc-12_x/?utm_source=ig_embed" style="x">
+            <div><a href="https://www.instagram.com/p/DAbc-12_x/?utm_source=ig_embed">View this post on Instagram A post shared by Tiger Feet</a></div></blockquote>
+            <div class="social-share"><iframe src="https://www.instagram.com/reel/CxyZ/embed"></iframe></div>
+            </article></body></html>"""
+        val b = ExternalArticle.parse(html, "https://www.example.com/a/b", null).blocks
+        assertEquals(listOf(Block.Embed("https://www.instagram.com/p/DAbc-12_x/embed/"), Block.Embed("https://www.instagram.com/reel/CxyZ/embed/")), b.filterIsInstance<Block.Embed>())
+        assertTrue(b.none { it is Block.Quote })
+    }
+
+    @Test fun bannerAdsAreDropped() {
+        val html = """<html><body><article>$longText
+            <img src="https://img.example.com/photo.jpg" width="800" height="450"/>
+            <div class="ad-slot top"><img src="https://img.example.com/promo.jpg" width="728" height="90"/></div>
+            <img src="https://img.example.com/b.jpg" width="728" height="90"/>
+            <a rel="sponsored nofollow" href="https://x.com"><img src="https://img.example.com/s.jpg" width="600" height="400"/></a>
+            <img src="https://pubads.g.doubleclick.net/x.png"/>
+            </article></body></html>"""
+        val imgs = ExternalArticle.parse(html, "https://www.example.com/a/b", null).blocks.filterIsInstance<Block.Image>()
+        assertEquals(listOf("https://img.example.com/photo.jpg"), imgs.map { it.url })
+    }
 }

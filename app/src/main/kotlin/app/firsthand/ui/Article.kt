@@ -277,7 +277,7 @@ internal fun BlockView(b: Block) {
         is Block.Heading -> Text(b.text, pad.padding(top = 10.dp), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         is Block.Quote -> Text(b.text, pad, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
         is Block.Image -> AsyncImage(b.url, b.caption, Modifier.fillMaxWidth().padding(vertical = 8.dp), contentScale = ContentScale.FillWidth)
-        is Block.Embed -> InlineEmbed(b.url)
+        is Block.Embed -> if (b.url.startsWith("https://www.instagram.com/")) InstagramEmbed(b.url) else InlineEmbed(b.url)
         is Block.Video -> VideoBlockView(b, LocalPageUrl.current)
     }
 }
@@ -289,6 +289,30 @@ fun InlineEmbed(url: String) {
     AndroidView(
         factory = { c -> WebView(c).apply { settings.javaScriptEnabled = true; settings.domStorageEnabled = true; setBackgroundColor(0); loadUrl(url) } },
         modifier = Modifier.fillMaxWidth().height(420.dp).padding(vertical = 8.dp),
+    )
+}
+
+/** An Instagram post (its /embed/ page) inline; taps on anything but the post itself open outside the frame. */
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+private fun InstagramEmbed(url: String) {
+    val open = LocalOpenLink.current
+    AndroidView(
+        factory = { c ->
+            WebView(c).apply {
+                settings.javaScriptEnabled = true; settings.domStorageEnabled = true; setBackgroundColor(0)
+                webViewClient = object : android.webkit.WebViewClient() {
+                    override fun shouldOverrideUrlLoading(view: WebView, request: android.webkit.WebResourceRequest): Boolean {
+                        val u = request.url.toString()
+                        if (u.startsWith(url.substringBefore("/embed/"))) return false
+                        if (request.hasGesture()) open(u)
+                        return true
+                    }
+                }
+                loadUrl(url)
+            }
+        },
+        modifier = Modifier.fillMaxWidth().height(640.dp).padding(vertical = 8.dp),
     )
 }
 

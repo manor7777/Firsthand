@@ -132,6 +132,36 @@ object ExternalArticle {
     private val noise = Regex("(?i)(related|newsletter|promo|advert|sponsor|comment|share|social|signup|sign-up|subscribe|recommend|outbrain|taboola|trending|more-from|read-more|byline|author-bio|breadcrumb|cookie|consent|paywall|toolbar)")
     private val boilerplate = Regex("(?i)^(read more|read next|read also|more:|related:|advertisement|sign up|subscribe|follow us|follow @|get the latest|click here|share this|join our|download our|get our|download the app|for more stories|more from|have your say|comments? (are|have)|you can |.{0,60}\\bnewsletter\\b).*")
 
+    private val instagramPost = Regex("(?i)instagram\\.com/(?:[\\w.]+/)?(p|reel|reels|tv)/([\\w-]+)")
+
+    /** The embeddable address of an Instagram post, from a `blockquote.instagram-media` (or an Instagram `<iframe>`), else null. */
+    internal fun instagramEmbed(el: Element): String? {
+        val isQuote = el.tagName() == "blockquote" && el.hasClass("instagram-media")
+        val isFrame = el.tagName() == "iframe" && instagramPost.containsMatchIn(el.attr("src").ifEmpty { el.attr("data-src") })
+        if (!isQuote && !isFrame) return null
+        val candidates = if (isFrame) listOf(el.attr("src").ifEmpty { el.attr("data-src") })
+        else listOf(el.attr("data-instgrm-permalink")) + el.select("a[href]").map { it.attr("href") }
+        val m = candidates.firstNotNullOfOrNull { instagramPost.find(it) } ?: return null
+        val kind = if (m.groupValues[1].equals("reels", true)) "reel" else m.groupValues[1].lowercase()
+        return "https://www.instagram.com/$kind/${m.groupValues[2]}/embed/"
+    }
+
+    private val adTokens = setOf(
+        "ad", "ads", "adv", "advert", "adverts", "advertisement", "advertisements", "advertising", "adslot", "adunit", "adsbygoogle",
+        "dfp", "mpu", "leaderboard", "sponsored", "taboola", "outbrain", "doubleclick",
+    )
+    private val adCompound = Regex("(?i)(\\bad[-_ ]?(banner|slot|unit|container|wrapper|placeholder|break|label|space)|(banner|advert\\w*)[-_ ]?ad\\b|adbanner|bannerad)")
+    private val adSrc = Regex("(?i)(doubleclick|googlesyndication|googleadservices|adservice|adserver|adsystem|/ads?/|[/_.-]ads?[/_.-]|ad[-_]?banner|banner[-_]?ad|pubads|criteo|taboola|outbrain)")
+
+    /** An element that is, or sits inside, an advertising slot (by class / id / data attributes). */
+    internal fun adMarked(e: Element): Boolean {
+        val marks = e.className() + " " + e.id() + " " + e.attr("data-ad") + " " + e.attr("data-ad-slot") + " " + e.attr("data-testid") + " " + e.attr("data-component") + " " + e.attr("data-google-query-id")
+        if (e.hasAttr("data-ad") || e.hasAttr("data-ad-slot") || e.hasAttr("data-google-query-id") || e.hasAttr("data-ad-client")) return true
+        if (e.tagName() == "ins" && e.hasClass("adsbygoogle")) return true
+        if (e.tagName() == "a" && e.attr("rel").contains("sponsored", true)) return true
+        return marks.split(Regex("[^A-Za-z0-9]+")).any { it.lowercase() in adTokens } || adCompound.containsMatchIn(marks)
+    }
+
     private fun extract(root: Element): List<Block> {
         val out = ArrayList<Block>()
         val seen = HashSet<String>()
@@ -140,6 +170,7 @@ object ExternalArticle {
             while (p != null && p !== root) {
                 val tag = p.tagName()
                 if (tag in setOf("aside", "nav", "footer", "form", "header", "script", "style", "noscript", "button", "iframe")) return true
+                if (adMarked(p)) return true
                 val marks = p.className() + " " + p.id()
                 // Only treat a wrapper as noise when it is small; the real body can legitimately carry words like "share".
                 if (noise.containsMatchIn(marks) && p.select("p").sumOf { it.text().length } < 600) return true
@@ -147,7 +178,16 @@ object ExternalArticle {
             }
             return false
         }
-        for (el in root.select("p, h2, h3, blockquote, li, figure, img")) {
+        for (el in root.select("p, h2, h3, blockquote, li, figure, img, iframe")) {
+            // Instagram posts: shown as a real embed. They sit in "social" wrappers and an iframe is normally skipped, so check first.
+            val insta = instagramEmbed(el)
+            if (insta != null) {
+                var p = el.parent(); var hidden = false
+                while (p != null && p !== root) { if (p.tagName() in setOf("aside", "nav", "footer", "form", "header") || adMarked(p)) hidden = true; p = p.parent() }
+                if (!hidden && seen.add(insta)) out += Block.Embed(insta)
+                continue
+            }
+            if (el.tagName() == "iframe") continue
             if (skipped(el)) continue
             when (el.tagName()) {
                 "p" -> if (el.parents().none { it.tagName() == "blockquote" || it.tagName() == "figure" }) text(el)?.let { if (seen.add(it)) out += Block.Paragraph(it) }
@@ -157,7 +197,7 @@ object ExternalArticle {
                     if (t != null && el.select("a").sumOf { it.text().length } < t.length * 0.6 && seen.add(t)) out += Block.Paragraph("• $t")
                 }
                 "h2", "h3" -> text(el, minLen = 4)?.takeIf { it.length < 140 && !boilerplate.matches(it) && seen.add(it) }?.let { out += Block.Heading(it) }
-                "blockquote" -> text(el, minLen = 20)?.takeIf { seen.add(it) }?.let { out += Block.Quote(it) }
+                "blockquote" -> if (el.parents().none { it.tagName() == "blockquote" }) text(el, minLen = 20)?.takeIf { seen.add(it) }?.let { out += Block.Quote(it) }
                 "figure" -> image(el.selectFirst("img"), el.selectFirst("figcaption")?.text())?.takeIf { seen.add(it.url) }?.let { out += it }
                 "img" -> if (el.parents().none { it.tagName() == "figure" }) image(el, null)?.takeIf { seen.add(it.url) }?.let { out += it }
             }
@@ -175,6 +215,11 @@ object ExternalArticle {
         val src = (img.absUrl("src").ifEmpty { img.absUrl("data-src") }.ifEmpty { img.attr("srcset").substringBefore(' ').let { if (it.startsWith("http")) it else "" } })
         if (!src.startsWith("http") || src.endsWith(".svg") || src.contains("pixel", true) || src.contains("logo", true) || src.contains("avatar", true)) return null
         val w = img.attr("width").toIntOrNull(); if (w != null && w < 150) return null
+        // Banner ads: known ad-network addresses, or the stock banner shapes (728x90, 320x50, 970x250...) when the size is given.
+        if (adSrc.containsMatchIn(src)) return null
+        val h = img.attr("height").toIntOrNull()
+        if (w != null && h != null && h > 0 && (w.toFloat() / h >= 4f || (w to h) in setOf(300 to 250, 336 to 280, 300 to 600))) return null
+        if (img.parents().any { it.tagName() == "a" && it.attr("rel").contains("sponsored", true) }) return null
         return Block.Image(src, caption?.trim()?.takeIf { it.isNotEmpty() })
     }
 }
