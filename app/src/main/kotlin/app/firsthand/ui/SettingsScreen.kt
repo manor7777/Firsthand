@@ -200,16 +200,11 @@ fun SettingsScreen(
                         is UpdateState.Available -> {
                             Text("Version ${u.release.versionName} is available.", fontWeight = FontWeight.SemiBold)
                             if (u.release.notes.isNotBlank()) Text(u.release.notes.take(400), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Button({ updates.install(u.release) }) { Text("Download and install") }
+                            Button({ updates.download(u.release) }) { Text("Download update") }
+                            Text("Opens the download in your browser. When it finishes, open the file and tap Install.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        is UpdateState.Downloading -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("Downloading… ${(u.progress * 100).toInt()}%")
-                            LinearProgressIndicator({ u.progress }, Modifier.fillMaxWidth())
-                        }
-                        UpdateState.Installing -> Text("Installing…", color = MaterialTheme.colorScheme.primary)
                         is UpdateState.Error -> { Text(u.message, color = MaterialTheme.colorScheme.error); OutlinedButton(updates.check) { Text("Try again") } }
                     }
-                    updates.installResult?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
                     Heading("Backup")
                     Text("Export your followed topics, sections, writers, keywords, added sources, blocked writers and keywords, theme and accent to a file, or restore them from one.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -314,8 +309,8 @@ private fun SourcePicker(added: List<Source>, bbcOn: Boolean, onAdd: (Source) ->
 }
 
 class UpdateUi(
-    val installedName: String, val state: UpdateState, val installResult: String?,
-    val check: () -> Unit, val install: (UpdateChecker.Release) -> Unit,
+    val installedName: String, val state: UpdateState,
+    val check: () -> Unit, val download: (UpdateChecker.Release) -> Unit,
 )
 
 class AlertState(
