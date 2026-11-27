@@ -31,6 +31,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Guard - no install permission or installer (Google Play Protect)
+        run: |
+          # Play Protect blocked every build that declared the install permission; builds without it were safe (see CLAUDE.md).
+          if grep -rnE "REQUEST_INSTALL_PACKAGES|PackageInstaller|canRequestPackageInstalls|MANAGE_UNKNOWN_APP_SOURCES" app/src; then
+            echo "::error::Firsthand must not declare the install permission or install packages itself: Google Play Protect blocks it. See CLAUDE.md."
+            exit 1
+          fi
       - name: Build number
         run: |
           # Firsthand's run numbers restart at 1, so offset them above the BBC-Revived builds already installed.
