@@ -174,7 +174,7 @@ class Repository(ctx: Context) {
                     }
                 }
                 if (parsed == null || parsed.blocks.isEmpty()) {
-                    // Still nothing (a paywall, usually): try the page as a search crawler is shown it, then a saved copy.
+                    // Still nothing (a paywall, usually): try a saved copy.
                     val u = unlock(story); if (u != null) parsed = u
                 }
                 val p = parsed
@@ -189,15 +189,11 @@ class Repository(ctx: Context) {
         }.getOrDefault(fallback)
     }
 
-    private val crawlerUa = "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
-
     /**
-     * Best effort for a page that gave no text: the address fetched with a search crawler's agent (many publishers show crawlers the
-     * whole story), then the newest saved copy on archive.ph. Returns the first that holds a readable article, else null.
+     * Best effort for a page that gave no text: the newest saved copy on archive.ph. Returns it if it holds a readable article, else null.
      */
     private suspend fun unlock(story: Story): ExternalArticle.Parsed? = withContext(Dispatchers.IO) {
         val tries = listOf<() -> String>(
-            { fetch(story.url, crawlerUa) },
             { fetch("https://archive.ph/newest/" + story.url, browserUa) },
         )
         for (t in tries) {
