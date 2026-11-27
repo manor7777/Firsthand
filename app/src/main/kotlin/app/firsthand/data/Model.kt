@@ -25,7 +25,7 @@ data class Story(
     val sectionName: String get() = category.takeUnless { it.isBlank() || (source == null && it == "News") || it == sourceName }.orEmpty()
 }
 
-data class PageMeta(val title: String?, val description: String?, val image: String?)
+data class PageMeta(val title: String?, val description: String?, val image: String?, val siteName: String? = null)
 
 data class HomeData(val breaking: List<Story>, val mostRead: List<Story>)
 
@@ -220,7 +220,7 @@ data class Author(val name: String, val role: String?, val source: String? = nul
 }
 
 /** Byline and dates of an article (ISO-8601 instants), shown under the headline. */
-data class ArticleInfo(val authors: List<Author>, val published: String?, val updated: String?)
+data class ArticleInfo(val authors: List<Author>, val published: String?, val updated: String?, val paywalled: Boolean = false)
 
 data class ArticleContent(
     val blocks: List<Block>, val topics: List<TopicRef>,

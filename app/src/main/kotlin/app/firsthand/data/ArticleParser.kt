@@ -28,7 +28,7 @@ object ArticleParser {
         }
         val title = og("title") ?: Regex("<title[^>]*>(.*?)</title>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
             .find(html)?.groupValues?.get(1)?.let(::unescape)
-        return PageMeta(title?.removeSuffix(" - BBC News")?.trim()?.takeIf { it.isNotEmpty() }, og("description"), og("image"))
+        return PageMeta(title?.removeSuffix(" - BBC News")?.trim()?.takeIf { it.isNotEmpty() }, og("description"), og("image"), og("site_name"))
     }
 
     /** Writers credited in the article's byline block (name + role, e.g. "Business reporter"). */

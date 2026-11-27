@@ -151,7 +151,7 @@ class Repository(ctx: Context) {
         val fallback = ArticleContent(emptyList(), emptyList(), ArticleInfo(story.authors, published, null))
         return runCatching {
             var blocks = story.contentHtml?.let { withContext(Dispatchers.Default) { ExternalArticle.blocks(it, story.url) } }.orEmpty()
-            var authors = story.authors; var pub = published; var upd: String? = null
+            var authors = story.authors; var pub = published; var upd: String? = null; var paywalled = false
             if (!ExternalArticle.readable(blocks)) {
                 var parsed: ExternalArticle.Parsed? = null
                 val kept = renderedFile(story.url).takeIf { it.exists() }?.readText()
@@ -173,15 +173,39 @@ class Repository(ctx: Context) {
                         else if (parsed == null) parsed = p
                     }
                 }
+                if (parsed == null || parsed.blocks.isEmpty()) {
+                    // Still nothing (a paywall, usually): try the page as a search crawler is shown it, then a saved copy.
+                    val u = unlock(story); if (u != null) parsed = u
+                }
                 val p = parsed
                 if (p != null) {
+                    paywalled = p.paywalled && p.blocks.isEmpty()
                     blocks = p.blocks
                     if (authors.isEmpty()) authors = p.authors
                     p.published?.let { pub = it }; upd = p.updated
                 }
             }
-            ArticleContent(blocks, emptyList(), ArticleInfo(authors, pub, upd))
+            ArticleContent(blocks, emptyList(), ArticleInfo(authors, pub, upd, paywalled))
         }.getOrDefault(fallback)
+    }
+
+    private val crawlerUa = "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+
+    /**
+     * Best effort for a page that gave no text: the address fetched with a search crawler's agent (many publishers show crawlers the
+     * whole story), then the newest saved copy on archive.ph. Returns the first that holds a readable article, else null.
+     */
+    private suspend fun unlock(story: Story): ExternalArticle.Parsed? = withContext(Dispatchers.IO) {
+        val tries = listOf<() -> String>(
+            { fetch(story.url, crawlerUa) },
+            { fetch("https://archive.ph/newest/" + story.url, browserUa) },
+        )
+        for (t in tries) {
+            val html = runCatching { t() }.getOrNull() ?: continue
+            val p = runCatching { parsePage(html, story) }.getOrNull() ?: continue
+            if (ExternalArticle.readable(p.blocks)) return@withContext p
+        }
+        null
     }
 
     suspend fun article(story: Story): ArticleContent = if (story.source != null) externalArticle(story) else runCatching {
@@ -201,9 +225,10 @@ class Repository(ctx: Context) {
     }
 
     /** A story for a tapped link to an added source's article: headline, summary and picture from the page's preview tags. */
-    suspend fun storyFromSourceLink(url: String, source: String): Story {
+    suspend fun storyFromSourceLink(url: String, source0: String, pageName: Boolean = false): Story {
         val m = withTimeoutOrNull(6_000) { runCatching { ArticleParser.meta(get(url)) }.getOrNull() }
         // Page titles usually end with the site name ("Headline | Example Post"); the reader shows the source separately.
+        val source = if (pageName) m?.siteName?.trim()?.takeIf { it.length in 2..40 } ?: source0 else source0
         val title = m?.title?.replace(Regex("\\s*[|\\-\u2013\\u2014:]\\s*" + Regex.escape(source) + ".*$", RegexOption.IGNORE_CASE), "")?.trim()?.takeIf { it.isNotEmpty() }
         return Story(
             id = url, title = title ?: runCatching { java.net.URI(url).host }.getOrNull() ?: source, summary = m?.description.orEmpty(),

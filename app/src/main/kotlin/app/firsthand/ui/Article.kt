@@ -172,7 +172,7 @@ private fun ArticlePage(
                 // Parser found nothing (page format changed or offline): show the RSS summary and a link out.
                 Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(s.summary, style = MaterialTheme.typography.bodyLarge)
-                    Text("Full text isn't available in-app for this story.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(if (info?.paywalled == true) "This story is behind the publisher's paywall." else "Full text isn't available in-app for this story.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     FilledTonalButton({ ExternalBrowser.open(ctx, s.url) }) { Text("Open original") }
                 }
             }

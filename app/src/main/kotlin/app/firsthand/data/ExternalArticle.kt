@@ -11,7 +11,7 @@ import org.jsoup.nodes.Element
  * found the reader falls back to the feed summary with an "Open original" button.
  */
 object ExternalArticle {
-    class Parsed(val blocks: List<Block>, val authors: List<Author>, val published: String?, val updated: String?)
+    class Parsed(val blocks: List<Block>, val authors: List<Author>, val published: String?, val updated: String?, val paywalled: Boolean = false)
 
     /** Article text from an HTML fragment or whole page. */
     fun blocks(html: String, baseUrl: String): List<Block> {
@@ -43,7 +43,14 @@ object ExternalArticle {
         return Parsed(
             listOfNotNull(video) + text + described, authors,
             ld.firstNotNullOfOrNull { it.str("datePublished") }?.let(::iso), ld.firstNotNullOfOrNull { it.str("dateModified") }?.let(::iso),
+            paywalled(ld),
         )
+    }
+
+    /** schema.org's own flag: `isAccessibleForFree` false on the article (as a boolean or the string "False"). */
+    internal fun paywalled(ld: List<JsonObject>) = ld.any {
+        val v = it["isAccessibleForFree"] as? JsonPrimitive
+        v != null && v.content.equals("false", true)
     }
 
     /** Enough real text to show instead of the summary: a few paragraphs, or one long one. */
