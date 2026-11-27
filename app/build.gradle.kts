@@ -13,7 +13,8 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "app.firsthand"
+        // CI can override this (-PappId=...) for side-by-side test builds; releases always use app.firsthand.
+        applicationId = (project.findProperty("appId") as String?)?.takeIf { it.isNotBlank() } ?: "app.firsthand"
         minSdk = 31
         targetSdk = 35
         versionCode = buildNumber

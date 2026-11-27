@@ -8,6 +8,14 @@ on:
         description: "Publish a GitHub Release with the APK (what the in-app updater installs)"
         type: boolean
         default: false
+      test_key:
+        description: "TEST BUILD: sign with a throwaway key made in this run (artifact only; cannot be combined with release)"
+        type: boolean
+        default: false
+      app_id:
+        description: "TEST BUILD: override the application ID so it installs beside the real app (blank = app.firsthand)"
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -29,14 +37,27 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Unit tests
         run: ./gradlew testDebugUnitTest -PbuildNumber=${{ env.BUILD_NUMBER }}
+      - name: Test builds can't be released
+        if: github.event_name == 'workflow_dispatch' && inputs.release && (inputs.test_key || inputs.app_id != '')
+        run: echo "::error::test_key / app_id builds are for artifacts only; untick release." && exit 1
       - name: Signing key
         env:
+          TEST_KEY: ${{ github.event_name == 'workflow_dispatch' && inputs.test_key }}
           B64: ${{ secrets.KEYSTORE_B64 }}
           STORE_PW: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_AL: ${{ secrets.KEY_ALIAS }}
           KEY_PW: ${{ secrets.KEY_PASSWORD }}
         run: |
-          if [ -n "$B64" ]; then
+          if [ "$TEST_KEY" = "true" ]; then
+            keytool -genkeypair -keystore "$RUNNER_TEMP/test.jks" -storepass testpass123 -keypass testpass123 \
+              -alias test -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Firsthand test build"
+            {
+              echo "KEYSTORE_PATH=$RUNNER_TEMP/test.jks"
+              echo "KEYSTORE_PASSWORD=testpass123"
+              echo "KEY_ALIAS=test"
+              echo "KEY_PASSWORD=testpass123"
+            } >> "$GITHUB_ENV"
+          elif [ -n "$B64" ]; then
             echo "$B64" | base64 -d > "$RUNNER_TEMP/release.jks"
             {
               echo "KEYSTORE_PATH=$RUNNER_TEMP/release.jks"
@@ -48,7 +69,9 @@ jobs:
             echo "::warning::No signing secrets set: this APK is debug-signed and can't update a release build."
           fi
       - name: Assemble release APK
-        run: ./gradlew assembleRelease -PbuildNumber=${{ env.BUILD_NUMBER }}
+        env:
+          APP_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.app_id || '' }}
+        run: ./gradlew assembleRelease -PbuildNumber=${{ env.BUILD_NUMBER }} -PappId="$APP_ID"
       - name: Name the APK
         run: mv app/build/outputs/apk/release/*.apk "app/build/outputs/apk/release/firsthand-0.1.${{ env.BUILD_NUMBER }}.apk"
       - uses: actions/upload-artifact@v4
