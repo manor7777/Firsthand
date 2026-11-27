@@ -17,6 +17,11 @@ on:
         type: string
         default: ""
 
+      drop_install_permission:
+        description: "TEST BUILD: remove the REQUEST_INSTALL_PACKAGES permission from the manifest (artifact only; cannot be combined with release)"
+        type: boolean
+        default: false
+
 permissions:
   contents: write
 
@@ -38,8 +43,13 @@ jobs:
       - name: Unit tests
         run: ./gradlew testDebugUnitTest -PbuildNumber=${{ env.BUILD_NUMBER }}
       - name: Test builds can't be released
-        if: github.event_name == 'workflow_dispatch' && inputs.release && (inputs.test_key || inputs.app_id != '')
+        if: github.event_name == 'workflow_dispatch' && inputs.release && (inputs.test_key || inputs.app_id != '' || inputs.drop_install_permission)
         run: echo "::error::test_key / app_id builds are for artifacts only; untick release." && exit 1
+      - name: Drop the install permission (test builds)
+        if: github.event_name == 'workflow_dispatch' && inputs.drop_install_permission
+        run: |
+          sed -i '/REQUEST_INSTALL_PACKAGES/d' app/src/main/AndroidManifest.xml
+          ! grep -q REQUEST_INSTALL_PACKAGES app/src/main/AndroidManifest.xml
       - name: Signing key
         env:
           TEST_KEY: ${{ github.event_name == 'workflow_dispatch' && inputs.test_key }}
