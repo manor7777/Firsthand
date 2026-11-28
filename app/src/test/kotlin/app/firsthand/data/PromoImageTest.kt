@@ -17,6 +17,16 @@ class PromoImageTest {
         assertEquals(emptyList<String>(), images(blocks("""<a href="https://other-agency.com/book"><img src="https://cdn.example.com/u/x3.jpg" width="900" height="400"></a>""")))
     }
 
+    @Test fun dropsStoryboard18Banner() {
+        val tag = """<div class="rhs-banner"><picture><img src="https://images.storyboard18.com/storyboard18/2026/10/Storyboard-18-Festive-Final-Banner_300x100-1-2026-10-0ca198953adabefb891bc990cdc99747.gif" width="300" height="100" alt="RHS Festive Banner" title="RHS Festive Banner" class="top-banner-img"/></picture></div>"""
+        assertEquals(emptyList<String>(), images(blocks(tag)))
+    }
+
+    @Test fun keepsPhotosThatMentionCampaigns() {
+        val u = "https://cdn.example.com/u/outdoor-1019x573.jpg"
+        assertEquals(listOf(u), images(blocks("""<img src="$u" width="900" height="500" alt="Countdown-led outdoor campaign by an advertising agency, sponsored by Zepto">""")))
+    }
+
     @Test fun keepsStoryPictures() {
         assertEquals(listOf("https://cdn.example.com/u/can.jpg"), images(blocks("""<figure><img src="https://cdn.example.com/u/can.jpg" width="900" height="600"><figcaption>The can</figcaption></figure>""")))
         assertEquals(listOf("https://cdn.example.com/u/big.jpg"), images(blocks("""<a href="https://cdn.example.com/u/big-full.jpg"><img src="https://cdn.example.com/u/big.jpg" width="900" height="600"></a>""")))

@@ -217,17 +217,21 @@ object ExternalArticle {
         return t.takeIf { it.length >= minLen && !boilerplate.matches(it) }
     }
 
-    private val promoWords = Regex("(?i)(^|[^a-z])(banners?|promo(tion|tional)?s?|advertis\\w*|sponsor\\w*|campaigns?|house-?ads?|partner-?content)([^a-z]|$)")
+    /** Promo words in a file name, class or id. */
+    private val promoNames = Regex("(?i)(^|[^a-z])(banners?|promo(tion|tional)?s?|house-?ads?|advert\\w*|sponsor\\w*)([^a-z]|$)")
+    /** In alt text only the unmistakable labels count: news photos legitimately mention campaigns, advertising and sponsors. */
+    private val promoAlt = Regex("(?i)(\\bbanner\\b|^\\s*(advert\\w*|sponsor\\w*|promo\\w*)\\b)")
 
     /**
-     * A publisher's own promotion ("Advertise with us", "Subscribe", event banners): not a photo of the story. Recognised by promo words in the
-     * picture's file name, alt text, class or id (or a nearby wrapper's), or by a clickable picture without a caption that leads to another site.
+     * A publisher's own promotion ("Advertise with us", event banners): not a photo of the story. Recognised by promo words in the picture's
+     * file name, class or id (or a nearby wrapper's), an alt text that says "banner" or opens with "Advertisement"/"Sponsored", or a
+     * clickable picture without a caption that leads to another site.
      */
     internal fun promoImage(img: Element, caption: String?): Boolean {
-        val own = img.attr("src").substringBefore('?').substringAfterLast('/') + " " + img.attr("data-src").substringBefore('?').substringAfterLast('/') +
-            " " + img.attr("alt") + " " + img.className() + " " + img.id()
-        if (promoWords.containsMatchIn(own)) return true
-        if (img.parents().take(3).any { promoWords.containsMatchIn(it.className() + " " + it.id()) }) return true
+        val names = img.attr("src").substringBefore('?').substringAfterLast('/') + " " + img.attr("data-src").substringBefore('?').substringAfterLast('/') +
+            " " + img.className() + " " + img.id()
+        if (promoNames.containsMatchIn(names) || promoAlt.containsMatchIn(img.attr("alt"))) return true
+        if (img.parents().take(3).any { promoNames.containsMatchIn(it.className() + " " + it.id()) }) return true
         val link = img.parents().firstOrNull { it.tagName() == "a" }?.absUrl("href").orEmpty()
         if (link.isNotEmpty() && caption.isNullOrBlank()) {
             fun host(u: String) = runCatching { java.net.URI(u).host?.lowercase()?.removePrefix("www.") }.getOrNull()
