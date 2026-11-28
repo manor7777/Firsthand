@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -115,8 +116,12 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
         if (link != null) vm.openLink(link) else ExternalBrowser.open(ctx, url)
     }
     CompositionLocalProvider(LocalShowSource provides showSource, LocalOpenLink provides openLink) {
+    // Whatever sits under the top screen stays composed (to keep scroll positions) but is hidden from the semantics tree. Android's
+    // scroll capture ("extended screenshot") and screen readers walk that tree, and would otherwise grab the feed under the article.
+    val hideUnder: Modifier = Modifier.clearAndSetSemantics { }
+    val underReader = stack.isNotEmpty() || settingsOpen
     Box(Modifier.fillMaxSize()) {
-        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+        Surface(Modifier.fillMaxSize().then(if (underReader) hideUnder else Modifier), color = MaterialTheme.colorScheme.surface) {
             when {
                 searching -> SearchScreen(hz, query, pool, hits, vm::search, open)
                 tab == Tab.MyNews -> MyNewsScreen(hz, cats, topics, sources, bbcOn, vm::setCategories, open) { settingsOpen = true }
@@ -139,7 +144,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
             key(sc.id) {
                 val isTop = i == stack.lastIndex
                 val shown = remember { MutableTransitionState(false) }.apply { targetState = true }
-                AnimatedVisibility(shown, enter = slideInHorizontally { it }) {
+                AnimatedVisibility(shown, modifier = if (!isTop || settingsOpen) hideUnder else Modifier, enter = slideInHorizontally { it }) {
                     when (sc) {
                         is Screen.Reader -> ArticlePager(
                             sc.list, sc.index, blocks, vm::loadArticle, live, vm::loadLive, articleTopics, cats,
