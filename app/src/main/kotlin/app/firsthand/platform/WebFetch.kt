@@ -26,7 +26,7 @@ object WebFetch {
     private val one = Mutex() // one hidden browser at a time
 
     @SuppressLint("SetJavaScriptEnabled")
-    suspend fun html(ctx: Context, url: String, timeoutMs: Long = 20_000): String? = one.withLock {
+    suspend fun html(ctx: Context, url: String, timeoutMs: Long = 20_000, referer: String? = null): String? = one.withLock {
         withContext(Dispatchers.Main) {
             withTimeoutOrNull(timeoutMs + 5_000) {
                 suspendCancellableCoroutine<String?> { cont ->
@@ -62,7 +62,7 @@ object WebFetch {
                         }
                     }
                     cont.invokeOnCancellation { handler.post { finish(null) } }
-                    web.loadUrl(url)
+                    if (referer != null) web.loadUrl(url, mapOf("Referer" to referer)) else web.loadUrl(url)
                     handler.postDelayed({ poll() }, 2_500)
                 }
             }

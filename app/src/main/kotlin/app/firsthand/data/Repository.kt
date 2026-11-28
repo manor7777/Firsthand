@@ -26,21 +26,21 @@ class Repository(ctx: Context) {
     /** What a mainstream mobile browser sends (with our name on the end). Some publishers refuse unknown agents. */
     private val browserUa = "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 Firsthand/personal"
 
-    private suspend fun get(url: String, agent: String = ua): String = withContext(Dispatchers.IO) {
+    private suspend fun get(url: String, agent: String = ua, referer: String? = null): String = withContext(Dispatchers.IO) {
         val f = File(dir, url.hashCode().toString())
         try {
-            fetch(url, agent).also { f.writeText(it) }
+            fetch(url, agent, referer).also { f.writeText(it) }
         } catch (e: Exception) {
             if (f.exists()) f.readText() else throw e
         }
     }
 
     /** One request. A site that answers 401/403/406 to our own agent is asked again as a browser would (feeds included). */
-    private fun fetch(url: String, agent: String): String {
-        val req = Request.Builder().url(url).header("User-Agent", agent).build()
+    private fun fetch(url: String, agent: String, referer: String? = null): String {
+        val req = Request.Builder().url(url).header("User-Agent", agent).apply { referer?.let { header("Referer", it) } }.build()
         return client.newCall(req).execute().use { r ->
             if (!r.isSuccessful) {
-                if (r.code in setOf(401, 403, 406) && agent == ua) return@use fetch(url, browserUa)
+                if (r.code in setOf(401, 403, 406) && agent == ua) return@use fetch(url, browserUa, referer)
                 error("HTTP ${r.code}")
             }
             r.body!!.string()
@@ -137,6 +137,9 @@ class Repository(ctx: Context) {
     }
 
     /** A story from an added source: the feed's own full text if it has one, else the page's article text. Writers come from the feed. */
+    /** A page that arrived through a Google link is asked for as Google sent us (Google News Showcase pages are free to visitors from Google). */
+    private fun googleRef(story: Story): String? = if (story.openUrl != null) "https://www.google.com/" else null
+
     private fun renderedFile(url: String) = File(dir, url.hashCode().toString() + ".web")
     private suspend fun parsePage(html: String, story: Story) = withContext(Dispatchers.Default) { ExternalArticle.parse(html, story.url, story.source) }
 
@@ -159,14 +162,14 @@ class Repository(ctx: Context) {
                 var needBrowser = false
                 if (parsed == null || parsed.blocks.isEmpty()) {
                     var page: String? = null
-                    try { page = get(story.url, browserUa) }
+                    try { page = get(story.url, browserUa, googleRef(story)) }
                     catch (e: kotlinx.coroutines.CancellationException) { throw e }
                     catch (e: IllegalStateException) { needBrowser = true } // the site answered, but refused (HTTP error)
                     catch (e: Exception) { /* no connection: a hidden browser would not help */ }
                     if (page != null) { parsed = parsePage(page, story); if (parsed.blocks.isEmpty()) needBrowser = true }
                 }
                 if ((parsed == null || parsed.blocks.isEmpty()) && needBrowser) {
-                    val html = WebFetch.html(appCtx, story.url)
+                    val html = WebFetch.html(appCtx, story.url, referer = googleRef(story))
                     if (html != null) {
                         val p = parsePage(html, story)
                         if (p.blocks.isNotEmpty()) { runCatching { renderedFile(story.url).writeText(html.take(3_000_000)) }; parsed = p }
@@ -203,7 +206,7 @@ class Repository(ctx: Context) {
 
     /** A story for a tapped link to an added source's article: headline, summary and picture from the page's preview tags. */
     suspend fun storyFromSourceLink(url: String, source0: String, pageName: Boolean = false, openUrl: String? = null): Story {
-        val m = withTimeoutOrNull(6_000) { runCatching { ArticleParser.meta(get(url)) }.getOrNull() }
+        val m = withTimeoutOrNull(6_000) { runCatching { ArticleParser.meta(get(url, referer = if (openUrl != null) "https://www.google.com/" else null)) }.getOrNull() }
         // Page titles usually end with the site name ("Headline | Example Post"); the reader shows the source separately.
         val source = if (pageName) m?.siteName?.trim()?.takeIf { it.length in 2..40 } ?: source0 else source0
         val title = m?.title?.replace(Regex("\\s*[|\\-\u2013\\u2014:]\\s*" + Regex.escape(source) + ".*$", RegexOption.IGNORE_CASE), "")?.trim()?.takeIf { it.isNotEmpty() }
