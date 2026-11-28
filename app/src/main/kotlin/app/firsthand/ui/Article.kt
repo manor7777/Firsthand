@@ -173,7 +173,7 @@ private fun ArticlePage(
                 Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(s.summary, style = MaterialTheme.typography.bodyLarge)
                     Text(if (info?.paywalled == true) "This story is behind the publisher's paywall." else "Full text isn't available in-app for this story.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    FilledTonalButton({ ExternalBrowser.open(ctx, s.url) }) { Text("Open original") }
+                    FilledTonalButton({ ExternalBrowser.open(ctx, s.openUrl ?: s.url) }) { Text("Open original") }
                 }
             }
             else -> {
@@ -338,7 +338,7 @@ private fun LivePage(s: Story, posts: List<LivePost>?, loadLive: (Story) -> Unit
             Text(s.title, Modifier.padding(horizontal = 20.dp), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             if (s.summary.isNotBlank()) Text(s.summary, Modifier.padding(horizontal = 20.dp), style = MaterialTheme.typography.bodyLarge)
             Text("Live updates can't be shown in the app right now.", Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            FilledTonalButton({ ExternalBrowser.open(ctx, s.url) }, Modifier.padding(horizontal = 20.dp)) { Text("Open original") }
+            FilledTonalButton({ ExternalBrowser.open(ctx, s.openUrl ?: s.url) }, Modifier.padding(horizontal = 20.dp)) { Text("Open original") }
         }
         else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = readerTopInset(), bottom = 48.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {

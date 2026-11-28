@@ -42,18 +42,18 @@ class MainActivity : ComponentActivity() {
             if (launching) finish(); return
         }
         if (DeepLinks.parse(raw) == null && DeepLinks.isShortLink(raw)) {
-            lifecycleScope.launch { route(vm.resolveShortLink(raw), launching) }
+            lifecycleScope.launch { route(vm.resolveShortLink(raw), launching, shared = raw) }
         } else route(raw, launching)
     }
 
-    private fun route(url: String, launching: Boolean) {
+    private fun route(url: String, launching: Boolean, shared: String? = null) {
         val link = DeepLinks.parse(url)?.takeIf { vm.bbcEnabled.value } // BBC removed: its links go to the browser
         val src = if (link == null) vm.linkSource(url) else null
         when {
             link != null && link !is DeepLinks.Link.Unsupported -> vm.openLink(link)
-            src != null -> vm.openSourceLink(src, url)
+            src != null -> vm.openSourceLink(src, url, shared)
             // Any other web page: the reader strips cookie notices, ads and clutter. Social, video and maps links stay in the browser.
-            vm.readAnySite.value && app.firsthand.data.Sources.isReadableWebLink(url) -> vm.openWebLink(url)
+            vm.readAnySite.value && app.firsthand.data.Sources.isReadableWebLink(url) -> vm.openWebLink(url, shared)
             else -> {
                 ExternalBrowser.open(this, url)
                 if (launching) finish()

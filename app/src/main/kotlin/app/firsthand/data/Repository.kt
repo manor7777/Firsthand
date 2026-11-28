@@ -202,14 +202,14 @@ class Repository(ctx: Context) {
     }
 
     /** A story for a tapped link to an added source's article: headline, summary and picture from the page's preview tags. */
-    suspend fun storyFromSourceLink(url: String, source0: String, pageName: Boolean = false): Story {
+    suspend fun storyFromSourceLink(url: String, source0: String, pageName: Boolean = false, openUrl: String? = null): Story {
         val m = withTimeoutOrNull(6_000) { runCatching { ArticleParser.meta(get(url)) }.getOrNull() }
         // Page titles usually end with the site name ("Headline | Example Post"); the reader shows the source separately.
         val source = if (pageName) m?.siteName?.trim()?.takeIf { it.length in 2..40 } ?: source0 else source0
         val title = m?.title?.replace(Regex("\\s*[|\\-\u2013\\u2014:]\\s*" + Regex.escape(source) + ".*$", RegexOption.IGNORE_CASE), "")?.trim()?.takeIf { it.isNotEmpty() }
         return Story(
             id = url, title = title ?: runCatching { java.net.URI(url).host }.getOrNull() ?: source, summary = m?.description.orEmpty(),
-            url = url, imageUrl = m?.image, category = "", publishedMillis = 0L, source = source,
+            url = url, imageUrl = m?.image, category = "", publishedMillis = 0L, source = source, openUrl = openUrl,
         )
     }
 

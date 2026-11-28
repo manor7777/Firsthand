@@ -18,6 +18,8 @@ data class Story(
     val contentHtml: String? = null,
     /** Topic tags the feed gave the story (Reach: media:keywords; any feed's category elements). Used to tell what a story is about. */
     val tags: List<String> = emptyList(),
+    /** Where "Open original" goes when it should differ from [url]: the Google share link a story arrived through (Google News Showcase articles are free when opened from it). */
+    val openUrl: String? = null,
 ) {
     /** Who published it, for display: BBC stories carry no source tag (it is the default source). */
     val sourceName: String get() = source ?: "BBC News"

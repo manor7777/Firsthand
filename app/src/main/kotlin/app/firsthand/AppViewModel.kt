@@ -312,9 +312,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Opens an added source's article in the reader (headline and picture are read from the page first). */
     /** Opens any shared web page in the reader (headline and picture from the page; the site's address gives its name). */
-    fun openWebLink(url: String) { viewModelScope.launch { pendingOpen.value = repo.storyFromSourceLink(url, Sources.siteName(url), pageName = true) } }
+    fun openWebLink(url: String, openUrl: String? = null) { viewModelScope.launch { pendingOpen.value = repo.storyFromSourceLink(url, Sources.siteName(url), pageName = true, openUrl = openUrl) } }
 
-    fun openSourceLink(src: Source, url: String) { viewModelScope.launch { pendingOpen.value = repo.storyFromSourceLink(url, src.name) } }
+    fun openSourceLink(src: Source, url: String, openUrl: String? = null) { viewModelScope.launch { pendingOpen.value = repo.storyFromSourceLink(url, src.name, openUrl = openUrl) } }
 
     /** Opens a tapped bbc.com / bbc.co.uk news link in the reader (title/image are read from the page first). */
     fun openLink(link: DeepLinks.Link) { viewModelScope.launch { pendingOpen.value = repo.storyFromLink(link) } }
