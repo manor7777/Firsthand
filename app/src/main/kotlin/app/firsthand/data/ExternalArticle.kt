@@ -122,7 +122,7 @@ object ExternalArticle {
 
     private val bodySelectors = listOf(
         "[itemprop=articleBody]", "[class*=article-body]", "[class*=articleBody]", "[class*=article__body]", "[class*=story-body]",
-        "[class*=entry-content]", "[class*=post-content]", "[data-component=text-block]",
+        "[class*=news-body]", "[class*=entry-content]", "[class*=post-content]", "[data-component=text-block]",
     )
 
     /** The element holding the story: a known article-body hook, else the `<article>` with most text, else the page body. */
@@ -169,6 +169,11 @@ object ExternalArticle {
         return marks.split(Regex("[^A-Za-z0-9]+")).any { it.lowercase() in adTokens } || adCompound.containsMatchIn(marks)
     }
 
+    private val endHeading = Regex("(?i)^\\s*(more (from|stories|news|on|like this)|related (stories|articles|news|posts|reading|content)|you (may|might|could) also (like|enjoy)|recommended( for you| stories| reading)?|read next|don.t miss|from around the web|sponsored (content|stories|links)|promoted (stories|content)|around the web)\\b")
+
+    /** True for the heading that opens the tail of a page (more stories, recommendations), not part of the article. */
+    internal fun endOfStory(heading: String) = heading.length < 80 && endHeading.containsMatchIn(heading)
+
     private fun extract(root: Element): List<Block> {
         val out = ArrayList<Block>()
         val seen = HashSet<String>()
@@ -186,6 +191,9 @@ object ExternalArticle {
             return false
         }
         for (el in root.select("p, h2, h3, blockquote, li, figure, img, iframe")) {
+            // The end of the story: a "More from ..." / "Related stories" heading after the text. What follows is a list of other
+            // stories and adverts (often one that keeps loading more), never part of this article.
+            if (el.tagName() in setOf("h2", "h3") && endOfStory(el.text()) && out.count { it is Block.Paragraph } >= 3 && out.sumOf { (it as? Block.Paragraph)?.text?.length ?: 0 } >= 300) break
             // Instagram posts: shown as a real embed. They sit in "social" wrappers and an iframe is normally skipped, so check first.
             val insta = instagramEmbed(el)
             if (insta != null) {

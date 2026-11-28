@@ -32,4 +32,21 @@ class PromoImageTest {
         assertEquals(listOf("https://cdn.example.com/u/big.jpg"), images(blocks("""<a href="https://cdn.example.com/u/big-full.jpg"><img src="https://cdn.example.com/u/big.jpg" width="900" height="600"></a>""")))
         assertEquals(listOf("https://cdn.example.com/u/same.jpg"), images(blocks("""<a href="https://news.example.com/photos/1"><img src="https://cdn.example.com/u/same.jpg" width="900" height="600"></a>""")))
     }
+
+    @Test fun stopsAtMoreFromList() {
+        fun para(n: Int) = "<p>" + "Real story text number $n that is long enough to count as an article paragraph. ".repeat(3) + "</p>"
+        val tail = (1..20).joinToString("") { """<div><a href="/s/$it"><h3>Other story number $it with a long headline</h3><img src="https://cdn.example.com/u/other$it.jpg" width="400" height="226"></a></div>""" }
+        val b = ExternalArticle.blocks("<html><body><main>${para(1)}${para(2)}${para(3)}<section><h2>More from <span>Example</span></h2>$tail</section></main></body></html>", "https://news.example.com/a/1")
+        assertEquals(3, b.filterIsInstance<Block.Paragraph>().size)
+        assertEquals(0, b.filterIsInstance<Block.Heading>().size)
+        assertEquals(0, b.filterIsInstance<Block.Image>().size)
+    }
+
+    @Test fun keepsHeadingsInsideTheStory() {
+        assertTrue(ExternalArticle.endOfStory("More from Storyboard18"))
+        assertTrue(ExternalArticle.endOfStory("Related stories"))
+        assertFalse(ExternalArticle.endOfStory("A new front in the zero-sugar cola market"))
+        assertFalse(ExternalArticle.endOfStory("Trending Topics"))
+        assertFalse(ExternalArticle.endOfStory("More than a million people lost power"))
+    }
 }
