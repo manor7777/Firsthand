@@ -104,8 +104,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     val showSource = (if (bbcOn) 1 else 0) + sources.size > 1
     val videos by vm.videos.collectAsStateWithLifecycle()
     val upState by vm.update.collectAsStateWithLifecycle()
-    val installResult by vm.installResult.collectAsStateWithLifecycle()
-    val updates = UpdateUi(vm.installedName, upState, installResult, vm::checkForUpdate, vm::installUpdate)
+    val updates = UpdateUi(vm.installedName, upState, vm::checkForUpdate, vm::openUpdateDownload)
     val open: (List<Story>, Int) -> Unit = { l, i -> push { Screen.Reader(it, l, i) } }
 
     BackHandler(enabled = searching && stack.isEmpty()) { searching = false; query = "" }

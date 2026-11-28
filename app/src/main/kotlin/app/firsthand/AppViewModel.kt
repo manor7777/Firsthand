@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import app.firsthand.data.*
 import app.firsthand.notify.Alerts
 import app.firsthand.platform.SourceLinks
-import app.firsthand.update.Installer
 import app.firsthand.update.UpdateChecker
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -326,19 +325,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         data object Checking : UpdateState
         data object UpToDate : UpdateState
         data class Available(val release: UpdateChecker.Release) : UpdateState
-        data class Downloading(val progress: Float) : UpdateState
-        data object Installing : UpdateState
         data class Error(val message: String) : UpdateState
     }
     private val http = okhttp3.OkHttpClient()
     private val _update = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val update = _update.asStateFlow()
-    val installResult = Installer.result.asStateFlow()
     private val installedCode: Long get() = getApplication<Application>().packageManager.getPackageInfo(getApplication<Application>().packageName, 0).longVersionCode
     val installedName: String get() = getApplication<Application>().packageManager.getPackageInfo(getApplication<Application>().packageName, 0).versionName.orEmpty()
 
     fun checkForUpdate() {
-        if (_update.value is UpdateState.Checking || _update.value is UpdateState.Downloading) return
+        if (_update.value is UpdateState.Checking) return
         _update.value = UpdateState.Checking
         viewModelScope.launch {
             val r = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { UpdateChecker.check(http, installedCode) }
@@ -351,23 +347,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun installUpdate(r: UpdateChecker.Release) {
+    /**
+     * Opens the release APK's link in the browser, which downloads it; the user then opens the file and Android's own installer
+     * takes over. Firsthand deliberately has no install permission and no installer of its own: with them, Google Play Protect
+     * blocked the app as harmful.
+     */
+    fun openUpdateDownload(r: UpdateChecker.Release) {
         val ctx = getApplication<Application>()
-        if (!Installer.canInstall(ctx)) {
-            _update.value = UpdateState.Error("Allow Firsthand to install apps, then tap Install again.")
-            Installer.openInstallPermission(ctx); return
-        }
-        Installer.result.value = null
-        _update.value = UpdateState.Downloading(0f)
-        viewModelScope.launch {
-            runCatching {
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    val apk = Installer.download(ctx, http, r) { p -> _update.value = UpdateState.Downloading(p) }
-                    Installer.install(ctx, apk)
-                }
-            }.onSuccess { _update.value = UpdateState.Installing }
-                .onFailure { _update.value = UpdateState.Error(it.message ?: "Update failed.") }
-        }
+        runCatching {
+            ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(r.apkUrl)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+        }.onFailure { _update.value = UpdateState.Error("Couldn't open the browser. Download it from ${r.apkUrl}") }
     }
 
     /** A story to open on screen, set when the app is launched from an alert or a BBC link. */
