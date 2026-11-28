@@ -217,6 +217,26 @@ object ExternalArticle {
         return t.takeIf { it.length >= minLen && !boilerplate.matches(it) }
     }
 
+    private val promoWords = Regex("(?i)(^|[^a-z])(banners?|promo(tion|tional)?s?|advertis\\w*|sponsor\\w*|campaigns?|house-?ads?|partner-?content)([^a-z]|$)")
+
+    /**
+     * A publisher's own promotion ("Advertise with us", "Subscribe", event banners): not a photo of the story. Recognised by promo words in the
+     * picture's file name, alt text, class or id (or a nearby wrapper's), or by a clickable picture without a caption that leads to another site.
+     */
+    internal fun promoImage(img: Element, caption: String?): Boolean {
+        val own = img.attr("src").substringBefore('?').substringAfterLast('/') + " " + img.attr("data-src").substringBefore('?').substringAfterLast('/') +
+            " " + img.attr("alt") + " " + img.className() + " " + img.id()
+        if (promoWords.containsMatchIn(own)) return true
+        if (img.parents().take(3).any { promoWords.containsMatchIn(it.className() + " " + it.id()) }) return true
+        val link = img.parents().firstOrNull { it.tagName() == "a" }?.absUrl("href").orEmpty()
+        if (link.isNotEmpty() && caption.isNullOrBlank()) {
+            fun host(u: String) = runCatching { java.net.URI(u).host?.lowercase()?.removePrefix("www.") }.getOrNull()
+            val page = host(img.baseUri()); val to = host(link)
+            if (page != null && to != null && !(to == page || to.endsWith(".$page") || page.endsWith(".$to")) && !Regex("(?i)\\.(jpe?g|png|webp|gif)(\\?|$)").containsMatchIn(link)) return true
+        }
+        return false
+    }
+
     private fun image(img: Element?, caption: String?): Block.Image? {
         img ?: return null
         val src = (img.absUrl("src").ifEmpty { img.absUrl("data-src") }.ifEmpty { img.attr("srcset").substringBefore(' ').let { if (it.startsWith("http")) it else "" } })
@@ -227,6 +247,7 @@ object ExternalArticle {
         val h = img.attr("height").toIntOrNull()
         if (w != null && h != null && h > 0 && (w.toFloat() / h >= 4f || (w to h) in setOf(300 to 250, 336 to 280, 300 to 600))) return null
         if (img.parents().any { it.tagName() == "a" && it.attr("rel").contains("sponsored", true) }) return null
+        if (promoImage(img, caption)) return null
         return Block.Image(src, caption?.trim()?.takeIf { it.isNotEmpty() })
     }
 }
